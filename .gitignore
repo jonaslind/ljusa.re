@@ -1,0 +1,7 @@
+# Eclipse
+.project
+
+# Npm
+node_modules
+dist
+

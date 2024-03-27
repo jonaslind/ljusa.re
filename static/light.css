@@ -1,0 +1,88 @@
+body {
+  background: var(--base3);
+  color: var(--base00);
+}
+
+h1 {
+  color: var(--base1);
+}
+
+#linkToStart {
+  color: var(--base1);
+}
+
+.externalLink {
+  color: var(--base00);
+}
+
+.internalLink {
+  color: var(--base00);
+}
+
+.packageLink {
+  color: var(--base00);
+}
+
+.licenseParagraph {
+  background: var(--base2);
+  border: 1px solid var(--base1);
+}
+
+.normalColors {
+  background: var(--base3);
+  color: var(--base00);
+}
+
+.highlightColors {
+  background: var(--base2);
+  color: var(--base01);
+}
+
+.lineColors {
+  background: var(--base2);
+  color: var(--base1);
+}
+
+.accentColor0 {
+  color: var(--red);
+}
+.accentColor1 {
+  color: var(--blue);
+}
+.accentColor2 {
+  color: var(--green);
+}
+.accentColor3 {
+  color: var(--magenta);
+}
+.accentColor4 {
+  color: var(--cyan);
+}
+.accentColor5 {
+  color: var(--yellow);
+}
+.accentColor6 {
+  color: var(--violet);
+}
+.accentColor7 {
+  color: var(--orange);
+}
+
+.locationSelectorContainer {
+  background: var(--base2);
+  border: 1px solid var(--base1);
+  color: var(--base01);
+}
+
+.locationSelector {
+  color: var(--base01);
+}
+
+.chosenLocation {
+  background: var(--base2);
+  border: 1px solid var(--base1);
+}
+
+.chosenLocation i:hover {
+  color: var(--base1);
+}

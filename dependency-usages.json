@@ -1,0 +1,32 @@
+{
+  "default": {
+    "usage": {
+      "en": "software from",
+      "se": "mjukvara från"
+    },
+    "type": {
+      "en": "package",
+      "se": "paketet"
+    }
+  },
+  "solarized": {
+    "usage": {
+      "en": "colors from",
+      "se": "färger från"
+    },
+    "type": {
+      "en": "color palette",
+      "se": "paletten"
+    }
+  },
+  "geonames": {
+    "usage": {
+      "en": "placenames, country names, coordinates, elevation data and timezones from a subset of",
+      "se": "platsnamn, landsnamn, koordinater, höjddata och tidszoner från en delmängd av"
+    },
+    "type": {
+      "en": "dataset",
+      "se": "datamängden"
+    }
+  }
+}

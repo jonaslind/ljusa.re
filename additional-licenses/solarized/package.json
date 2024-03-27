@@ -1,0 +1,11 @@
+{
+  "name": "solarized",
+  "homepage": "https://ethanschoonover.com/solarized/",
+  "version": "62f656a",
+  "author": "Ethan Schoonover",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/altercation/solarized.git"
+  }
+}

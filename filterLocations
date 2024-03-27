@@ -1,0 +1,699 @@
+///usr/bin/env java --source 21 --enable-preview -Xmx20G "$0" "$0" "$@"; exit $?
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BinaryOperator;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
+
+private static final Set<String> LANGUAGES = Collections.unmodifiableSet(Set.of("en", "sv"));
+
+// Places in a country are not allowed to be closer than 50 km
+private static final int GLOBAL_NEARNESS_LIMIT = 50;
+
+/*
+  Transforms the GeoNames dataset into a typescript code snippet used by locations.ts.
+
+  The locations have been filtered to only contain the top n cities by population, excluding cities that are within
+  a minimum distance of a bigger city (typically 4% of the furthest distance between places in that country or 50 km,
+  whichever is higher). Capital is always included, no matter population. The westernmost, easternmost, northernmost and
+  southernmost places are also included, unless they're within the minimum distance from a bigger city, in which case
+  that city is added instead. The highest and lowest places are always included, unless they're within the minimum
+  distance, in which case they're excluded.
+
+  This script is not included in any build pipeline. Download the allCountries.zip and alternateNamesV2.zip files from
+  https://download.geonames.org/export/dump/ and then run this script, passing the paths to the zip files as arguments.
+
+  The locations.ts source file is updated automatically by this script..
+*/
+
+public void main(String[] args) {
+
+  if (args.length == 0)
+    usageAndExitWithError(null);
+
+  Path thisScriptPath = null;
+  try {
+    thisScriptPath = Path.of(args[0]);
+  } catch (Exception e) {
+    e.printStackTrace();
+    System.exit(1);
+  }
+
+  Path locationsTypescriptSourceFile = thisScriptPath.getParent().resolve(Path.of("src/locations.ts"))
+      .toAbsolutePath().normalize();
+  if (!Files.exists(locationsTypescriptSourceFile)) {
+    System.out.println("locations.ts not found: " + locationsTypescriptSourceFile);
+    System.exit(1);
+  }
+  if (!Files.isRegularFile(locationsTypescriptSourceFile)) {
+    System.out.println(locationsTypescriptSourceFile.toString() + " is not a file.");
+    System.exit(1);
+  }
+  if (!Files.isReadable(locationsTypescriptSourceFile) || !Files.isWritable(locationsTypescriptSourceFile)) {
+    System.out.println(locationsTypescriptSourceFile.toString() + " is not readable and writable.");
+    System.exit(1);
+  }
+
+  if (args.length != 3) {
+    usageAndExitWithError(thisScriptPath);
+  }
+
+  Path countriesZipPath = Path.of(args[1]);
+  Path namesZipPath = Path.of(args[2]);
+
+  for (Path p : List.of(countriesZipPath, namesZipPath)) {
+    if (!Files.exists(p)) {
+      System.out.println("File not found: " + p);
+      System.exit(1);
+    }
+    if (!Files.isReadable(p)) {
+      System.out.println("File not readable: " + p);
+      System.exit(1);
+    }
+    if (!Files.isRegularFile(p)) {
+      System.out.println("Not a file: " + p);
+      System.exit(1);
+    }
+  }
+
+  String countriesDataFile = "allCountries.txt";
+  String namesDataFile = "alternateNamesV2.txt";
+
+  try {
+    new LocationsTypescriptSourceFileUpdater(locationsTypescriptSourceFile)
+        .updateSourceFile(new LocationFilterer(countriesZipPath, countriesDataFile, namesZipPath, namesDataFile,
+            LANGUAGES, GLOBAL_NEARNESS_LIMIT).getPlaces());
+  } catch (IOException e) {
+    e.printStackTrace();
+    System.exit(1);
+  }
+
+}
+
+public static void usageAndExitWithError(Path thisScriptPath) {
+  String thisScriptName = "<this script>";
+  if (thisScriptPath != null)
+    thisScriptName = thisScriptPath.getFileName().toString();
+  System.out.println("Usage: " + thisScriptName + " /path/to/allCountries.zip /path/to/alternateNamesV2.zip");
+  System.exit(1);
+}
+
+public static class LocationsTypescriptSourceFileUpdater {
+
+  private final Path locationsTypescriptSourceFile;
+
+  public LocationsTypescriptSourceFileUpdater(Path locationsTypescriptSourceFile) {
+    this.locationsTypescriptSourceFile = locationsTypescriptSourceFile;
+  }
+
+  public void updateSourceFile(List<Place> places) throws IOException {
+
+    List<String> locationsTSOriginal = Files.readAllLines(locationsTypescriptSourceFile, StandardCharsets.UTF_8);
+    List<String> locationsTSNew = new ArrayList<>();
+
+    boolean startFound = false;
+    boolean endFound = false;
+    for (String originalLine : locationsTSOriginal) {
+      if (!startFound || (startFound && endFound))
+        locationsTSNew.add(originalLine);
+      if (originalLine.contains("// _BEGIN_LOCATIONS_")) {
+        startFound = true;
+        places.stream().forEach((city) -> {
+          String names = "new Map([";
+          names = names
+              + city
+                  .names().keySet().stream().sorted().map(language -> "[\""
+                      + (language.equals("en") ? "en-gb" : language) + "\", \"" + city.names().get(language) + "\"]")
+                  .collect(Collectors.joining(", "));
+          names = names + "])";
+          locationsTSNew
+              .add("  [\"" + city.ascii_id() + "\", new Location(" + city.latitude() + ", " + city.longitude() + ", "
+                  + city.elevation() + ", " + names + ", new IANAZone(\"" + city.timezone + "\"))],");
+        });
+      }
+      if (originalLine.contains("// _END_LOCATIONS_")) {
+        locationsTSNew.add(originalLine);
+        endFound = true;
+      }
+    }
+
+    if (!startFound || !endFound) {
+      throw new IOException("Didn't find expected start and end tokens in " + locationsTypescriptSourceFile);
+    }
+
+    Files.write(locationsTypescriptSourceFile, locationsTSNew, StandardCharsets.UTF_8);
+
+    System.out.println("");
+    System.out.println("Typescript source code updated: " + locationsTypescriptSourceFile);
+    System.out.println("");
+  }
+}
+
+public static class LocationFilterer {
+
+  private final Path countriesZipPath;
+  private final String countriesDataFile;
+  private final Path namesZipPath;
+  private final String namesDataFile;
+  private final Set<String> languages;
+  private final int globalNearnessLimit;
+
+  public LocationFilterer(Path countriesZipPath, String countriesDataFile, Path namesZipPath, String namesDataFile,
+      Set<String> languages, int globalNearnessLimit) {
+    this.countriesZipPath = countriesZipPath;
+    this.countriesDataFile = countriesDataFile;
+    this.namesZipPath = namesZipPath;
+    this.namesDataFile = namesDataFile;
+    this.languages = languages;
+    this.globalNearnessLimit = globalNearnessLimit;
+
+  }
+
+  public List<Place> getPlaces() throws IOException {
+    System.out.println("Parsing places from " + countriesZipPath);
+    long start = System.currentTimeMillis();
+    Map<String, List<RawPlace>> rawPlaces = parsePlaces(countriesZipPath, countriesDataFile);
+    long end = System.currentTimeMillis();
+    long time = end - start;
+    System.out.println("Done, took " + (new BigDecimal(BigInteger.valueOf(time), 3).toString()) + " seconds");
+
+    System.out.println("Parsing alternate names from " + namesZipPath);
+    start = System.currentTimeMillis();
+    Map<Integer, List<AlternateName>> alternateNames = parseAlternateNames(namesZipPath, namesDataFile);
+    end = System.currentTimeMillis();
+    time = end - start;
+    System.out.println("Done, took " + (new BigDecimal(BigInteger.valueOf(time), 3).toString()) + " seconds");
+
+    System.out.println("Filtering places");
+    start = System.currentTimeMillis();
+    List<Place> places = rawPlaces.entrySet().parallelStream()
+        .flatMap(
+            countryToPlaces -> filterPlaces(countryToPlaces.getKey(), countryToPlaces.getValue(), alternateNames))
+        .collect(Collectors.toList());
+    end = System.currentTimeMillis();
+    time = end - start;
+    System.out.println("Done, took " + (new BigDecimal(BigInteger.valueOf(time), 3).toString()) + " seconds");
+
+    System.out.println("Sorting places alphabetically");
+    places.sort(Comparator.comparing(Place::ascii_id));
+
+    System.out.println("Data filtering complete!");
+
+    return places;
+
+  }
+
+  private Stream<Place> filterPlaces(String countryCode, List<RawPlace> rawPlaces,
+      Map<Integer, List<AlternateName>> alternateNames) {
+
+    AtomicReference<RawPlace> countryReference = new AtomicReference<>();
+
+    rawPlaces.parallelStream().forEach(place -> {
+      if (place.feature_code().equals("PCLI")) {
+        countryReference.set(place);
+      }
+      if (place.feature_code().equals("PCLD")) {
+        countryReference.compareAndSet(null, place);
+      }
+      if (place.feature_code().equals("TERR")) {
+        countryReference.compareAndSet(null, place);
+      }
+    });
+
+    AtomicReference<RawPlace> highestPlaceReference = new AtomicReference<>();
+    AtomicReference<RawPlace> lowestPlaceReference = new AtomicReference<>();
+    AtomicReference<RawPlace> capitalReference = new AtomicReference<>();
+
+    rawPlaces.parallelStream().filter(place -> !place.timezone().isEmpty()).forEach(place -> {
+      highestPlaceReference.accumulateAndGet(place, BinaryOperator.maxBy(Comparator.nullsFirst(Comparator
+          .comparing(RawPlace::dem).thenComparing(RawPlace::population).thenComparing(RawPlace::geoname_id))));
+      lowestPlaceReference.accumulateAndGet(place,
+          BinaryOperator.maxBy(Comparator.nullsFirst(Comparator.comparing(RawPlace::dem).reversed()
+              .thenComparing(RawPlace::population).thenComparing(RawPlace::geoname_id))));
+      if (place.feature_code().equals("PPLC")) {
+        capitalReference.compareAndSet(null, place);
+      }
+    });
+    RawPlace rawCountry = countryReference.get();
+    if (rawCountry == null) {
+      return Stream.empty();
+    }
+    Country country = new Country(rawCountry, alternateNames);
+    Place highestPlace = new Place(highestPlaceReference.get(), country);
+    Place lowestPlace = new Place(lowestPlaceReference.get(), country);
+    Place capital = null;
+    if (capitalReference.get() != null)
+      capital = new Place(capitalReference.get(), country);
+
+    List<RawPlace> rawPopulatedPlacesInCountry = rawPlaces.parallelStream().filter(
+        place -> place.feature_class() == 'P' && !place.feature_code().equals("PPLX") && !place.timezone().isEmpty())
+        .collect(Collectors.toList());
+    if (rawPopulatedPlacesInCountry.isEmpty()) {
+      return Stream.empty();
+    }
+    // Sort by longitude. This means west to east unless the 180th meridian passes
+    // through the country (Russia and Fiji) in which case we'll start with the
+    // place closest to the east of the 180th meridian and end with the place
+    // closest to the west of the 180th meridian. Luckily, none of those countries
+    // have negative longitudes to the west, so we'll just add 360 to negative
+    // longitudes to give them values > 180 for sorting.
+    rawPopulatedPlacesInCountry.sort(Comparator.comparing((RawPlace rawPlace) -> {
+      BigDecimal longitude = rawPlace.longitude();
+      if (countryCode.equals("RU") || countryCode.equals("FJ")) {
+        return longitude.add(BigDecimal.valueOf(360));
+      }
+      return longitude;
+    }).thenComparing(RawPlace::population).thenComparing(RawPlace::geoname_id));
+    Place westernmostPlace = new Place(rawPopulatedPlacesInCountry.get(0), country);
+    Place easternmostPlace = new Place(rawPopulatedPlacesInCountry.get(rawPopulatedPlacesInCountry.size() - 1),
+        country);
+
+    // Sort by latitude
+    rawPopulatedPlacesInCountry.sort(Comparator.comparing(RawPlace::latitude).thenComparing(RawPlace::population)
+        .thenComparing(RawPlace::geoname_id));
+    Place southernmostPlace = new Place(rawPopulatedPlacesInCountry.get(0), country);
+    Place northernmostPlace = new Place(rawPopulatedPlacesInCountry.get(rawPopulatedPlacesInCountry.size() - 1),
+        country);
+
+    // Limit calculations to the top numPlaces * 10 places
+    rawPopulatedPlacesInCountry
+        .sort(Comparator.comparing(RawPlace::population).reversed().thenComparing(RawPlace::geoname_id));
+    rawPopulatedPlacesInCountry = rawPopulatedPlacesInCountry.stream().limit(getNumberOfPlaces(countryCode) * 10)
+        .collect(Collectors.toList());
+
+    List<Place> allPlaces = rawPopulatedPlacesInCountry.stream().map(place -> new Place(place, country))
+        .collect(Collectors.toList());
+    // Always include the special places
+    if (capital != null)
+      allPlaces.add(capital);
+    allPlaces.add(westernmostPlace);
+    allPlaces.add(easternmostPlace);
+    allPlaces.add(northernmostPlace);
+    allPlaces.add(southernmostPlace);
+    allPlaces.add(lowestPlace);
+    allPlaces.add(highestPlace);
+    PlaceCollection places = new PlaceCollection(allPlaces, getMinimumAllowedDistanceMultiplier(countryCode),
+        globalNearnessLimit);
+    if (capital != null)
+      places.addIfNotNearExistingPlace(capital);
+    for (Place place : allPlaces) {
+      places.addIfNotNearExistingPlace(place);
+      if (places.size() == getNumberOfPlaces(countryCode)) {
+        break;
+      }
+    }
+    places.addLargestPlaceNear(westernmostPlace);
+    places.addLargestPlaceNear(easternmostPlace);
+    places.addLargestPlaceNear(northernmostPlace);
+    places.addLargestPlaceNear(southernmostPlace);
+    places.addIfNotNearExistingPlace(lowestPlace);
+    places.addIfNotNearExistingPlace(highestPlace);
+
+    return places.stream().map(place -> place.withAlternateNames(alternateNames));
+
+  }
+
+  private Map<Integer, List<AlternateName>> parseAlternateNames(Path namesZipPath, String namesDataFile)
+      throws IOException {
+    Map<Integer, List<AlternateName>> alternateNames;
+    try (ZipFile zipFile = new ZipFile(namesZipPath.toFile())) {
+      ZipEntry entry = zipFile.getEntry(namesDataFile);
+      try (BufferedReader reader = new BufferedReader(
+          new InputStreamReader(zipFile.getInputStream(entry), StandardCharsets.UTF_8))) {
+        alternateNames = reader.lines().parallel().map(line -> line.split("\t")).filter(fields -> fields.length != 10)
+            .map(fields -> new AlternateName(fields))
+            .filter(alternateName -> languages.contains(alternateName.isolanguage()))
+            .collect(Collectors.groupingBy(AlternateName::geoname_id));
+      }
+    }
+    return alternateNames;
+  }
+
+  private static Map<String, List<RawPlace>> parsePlaces(Path countriesZipPath, String countriesDataFile)
+      throws IOException {
+    Map<String, List<RawPlace>> rawPlaces;
+    try (ZipFile zipFile = new ZipFile(countriesZipPath.toFile())) {
+      ZipEntry entry = zipFile.getEntry(countriesDataFile);
+      try (BufferedReader reader = new BufferedReader(
+          new InputStreamReader(zipFile.getInputStream(entry), StandardCharsets.UTF_8))) {
+        rawPlaces = reader.lines().parallel().map(line -> line.split("\t")).map(fields -> new RawPlace(fields))
+            .collect(Collectors.groupingBy(RawPlace::country_code));
+      }
+    }
+    return rawPlaces;
+  }
+
+  private static int getNumberOfPlaces(String countryCode) {
+    return switch (countryCode) {
+    case "SE" -> 40;
+    // Rest of EU
+    case "AT", "BE", "BG", "HR", "CY", "CZ", "DK", "EE", "FI", "FR", "DE", "GR", "HU", "IE", "IT", "LV", "LT", "LU",
+        "MT", "NL", "PL", "PT", "RO", "SK", "SI", "ES" ->
+      10;
+    case "GB" -> 10;
+    // To include Las Vegas, Miami and New Orleans
+    case "US" -> 30;
+    case "CA" -> 15;
+    case "AU" -> 10;
+    case "CN" -> 10;
+    case "RU" -> 10;
+    default -> 3;
+    };
+  }
+
+  private static double getMinimumAllowedDistanceMultiplier(String countryCode) {
+    return switch (countryCode) {
+    // Otherwise New York is too close to Washington to be included
+    case "US" -> 0.035;
+    // Otherwise Montreal is too close to Ottawa to be included
+    case "CA" -> 0.03;
+    // 4% of the largest distance in the country.
+    default -> 0.04;
+    };
+  }
+}
+
+public static class PairKey<T extends Comparable<T>> {
+
+  private final T a;
+  private final T b;
+
+  public PairKey(T s1, T s2) {
+    if (s1.compareTo(s2) < 0) {
+      this.a = s1;
+      this.b = s2;
+    } else {
+      this.a = s2;
+      this.b = s1;
+    }
+  }
+
+  public <E> PairKey(E s1, E s2, Function<E, T> keyExtractor) {
+    this(keyExtractor.apply(s1), keyExtractor.apply(s2));
+  }
+
+  public static PairKey<String> of(Place s1, Place s2) {
+    return new PairKey<>(s1, s2, place -> place.ascii_id());
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(a, b);
+  }
+
+  @Override
+  public boolean equals(Object obj) {
+    if (this == obj)
+      return true;
+    if (obj == null)
+      return false;
+    if (getClass() != obj.getClass())
+      return false;
+    PairKey<?> other = (PairKey<?>) obj;
+    return Objects.equals(a, other.a) && Objects.equals(b, other.b);
+  }
+}
+
+public static class PlaceCollection implements Iterable<Place> {
+  private Map<String, Place> map;
+  private List<Place> allPlaces;
+  private Map<PairKey<String>, Double> distancesBetweenPlaces;
+  private double biggestDistanceBetweenAllPlaces;
+  private double minimumAllowedDistanceBetweenPlaces;
+  private int globalNearnessLimit;
+
+  public PlaceCollection(List<Place> allPlaces, double minimumAllowedDistanceMultiplier, int globalNearnessLimit) {
+    this.map = new HashMap<>();
+    this.allPlaces = allPlaces;
+    this.distancesBetweenPlaces = new HashMap<>();
+    for (int i = 0; i < this.allPlaces.size(); i++) {
+      this.distancesBetweenPlaces.put(PairKey.of(allPlaces.get(i), allPlaces.get(i)), (double) 0);
+      for (int j = i + 1; j < this.allPlaces.size(); j++) {
+        double distance = greatCircleDistance(allPlaces.get(i).latitude(), allPlaces.get(i).longitude(),
+            allPlaces.get(j).latitude(), allPlaces.get(j).longitude());
+        this.distancesBetweenPlaces.put(PairKey.of(allPlaces.get(i), allPlaces.get(j)), distance);
+      }
+    }
+    this.biggestDistanceBetweenAllPlaces = Collections.max(distancesBetweenPlaces.values());
+    this.minimumAllowedDistanceBetweenPlaces = this.biggestDistanceBetweenAllPlaces
+        * minimumAllowedDistanceMultiplier;
+    this.globalNearnessLimit = globalNearnessLimit;
+  }
+
+  private boolean isThisPlaceFurtherThanTheMinimumAllowedDistanceFromAllPreviousPlaces(Place candidatePlace) {
+    for (Place existingPlace : this.map.values()) {
+      double distance = this.distancesBetweenPlaces.get(PairKey.of(candidatePlace, existingPlace));
+      if (distance < this.minimumAllowedDistanceBetweenPlaces || distance < globalNearnessLimit) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  public void addIfNotNearExistingPlace(Place place) {
+
+    if (this.map.containsKey(place.ascii_id())) {
+      return;
+    }
+    if (this.isThisPlaceFurtherThanTheMinimumAllowedDistanceFromAllPreviousPlaces(place)) {
+      this.map.put(place.ascii_id(), place);
+    }
+  }
+
+  public void addLargestPlaceNear(Place place) {
+    Optional<Place> largestPlaceNear = this.allPlaces.stream()
+        .filter((otherPlace) -> this.distancesBetweenPlaces
+            .get(PairKey.of(otherPlace, place)) < this.minimumAllowedDistanceBetweenPlaces)
+        .sorted(Comparator.comparing(Place::population)).findFirst();
+    if (largestPlaceNear.isPresent()) {
+      this.addIfNotNearExistingPlace(largestPlaceNear.get());
+    } else {
+      this.addIfNotNearExistingPlace(place);
+    }
+  }
+
+  // Calculate great circle distance in km with haversine formula
+  private static double greatCircleDistance(BigDecimal lat1, BigDecimal lon1, BigDecimal lat2, BigDecimal lon2) {
+    final double radiansInOneDegree = Math.PI / 180;
+    final double earthRadius = 6371;
+    double lat1Radians = lat1.doubleValue() * radiansInOneDegree;
+    double lat2Radians = lat2.doubleValue() * radiansInOneDegree;
+    double deltaLatRadians = lat2.subtract(lat1).doubleValue() * radiansInOneDegree;
+    double deltaLonRadians = lon2.subtract(lon1).doubleValue() * radiansInOneDegree;
+    double haversine = Math.pow(Math.sin(deltaLatRadians / 2), 2)
+        + Math.cos(lat1Radians) * Math.cos(lat2Radians) * Math.pow(Math.sin(deltaLonRadians / 2), 2);
+    return 2 * earthRadius * Math.atan2(Math.sqrt(haversine), Math.sqrt(1 - haversine));
+  }
+
+  public int size() {
+    return this.map.size();
+  }
+
+  Stream<Place> stream() {
+    return StreamSupport.stream(spliterator(), false);
+  }
+
+  @Override
+  public Iterator<Place> iterator() {
+    return this.map.values().iterator();
+  }
+
+}
+
+private static Map<String, String> getNames(int geoname_id, String standardName,
+    Map<Integer, List<AlternateName>> alternateNames) {
+  List<String> languages = alternateNames.values().stream().flatMap(names -> names.stream())
+      .map(name -> name.isolanguage()).distinct().sorted().toList();
+  Map<String, String> names = new HashMap<>();
+  for (String language : languages) {
+    List<AlternateName> alternateLocalizedNames = alternateNames.entrySet().stream()
+        .filter(entry -> entry.getKey() == geoname_id).flatMap(entry -> entry.getValue().stream())
+        .filter(name -> name.isolanguage().equals(language)).collect(Collectors.toList());
+    List<AlternateName> preferredNames = alternateLocalizedNames.stream().filter(name -> name.isPreferredName())
+        .collect(Collectors.toList());
+    List<AlternateName> shortPreferredNames = preferredNames.stream().filter(name -> name.isShortName())
+        .collect(Collectors.toList());
+    String name;
+
+    if (!shortPreferredNames.isEmpty()) {
+      name = shortPreferredNames.get(0).alternateName();
+    } else if (!preferredNames.isEmpty()) {
+      name = preferredNames.get(0).alternateName();
+    } else if (!alternateLocalizedNames.isEmpty()) {
+      name = alternateLocalizedNames.get(0).alternateName();
+    } else {
+      name = standardName;
+    }
+
+    names.put(language, name);
+  }
+  return names;
+}
+
+private record Country(Map<String, String> names, String ascii_id) {
+
+  public Country(Map<String, String> names) {
+    this(names, names.get("en").toLowerCase().replaceAll("[^a-zA-Z0-9]", "_"));
+  }
+
+  public Country(RawPlace country, Map<Integer, List<AlternateName>> alternateNames) {
+    this(getNames(country.geoname_id(), country.name(), alternateNames));
+  }
+
+}
+
+public static class Place {
+
+  private final int geoname_id;
+  private final String standardName;
+  private final Country country;
+  private final Map<String, String> names;
+  private final String ascii_id;
+  private final BigDecimal latitude;
+  private final BigDecimal longitude;
+  private final int elevation;
+  private final long population;
+  private final String timezone;
+
+  private Place(int geoname_id, String standardName, Country country, Map<String, String> names, String ascii_id,
+      BigDecimal latitude, BigDecimal longitude, int elevation, long population, String timezone) {
+    this.geoname_id = geoname_id;
+    this.standardName = standardName;
+    this.country = country;
+    this.names = names;
+    this.ascii_id = ascii_id;
+    this.latitude = latitude;
+    this.longitude = longitude;
+    this.elevation = elevation;
+    this.population = population;
+    this.timezone = timezone;
+  }
+
+  public Place(RawPlace place, Country country) {
+    this(place.geoname_id(), place.name(), country, getPlaceNames(place, country),
+        place.ascii_name().toLowerCase().replaceAll("[^a-zA-Z0-9]", "_") + "_" + country.ascii_id, place.latitude(),
+        place.longitude(), place.dem(), place.population(), place.timezone());
+  }
+
+  public Place withAlternateNames(Map<Integer, List<AlternateName>> alternateNames) {
+    return new Place(this.geoname_id, this.standardName, this.country,
+        getPlaceNames(this.geoname_id, this.standardName, this.country, alternateNames), this.ascii_id(),
+        this.latitude(), this.longitude(), this.elevation(), this.population(), this.timezone());
+  }
+
+  private static Map<String, String> getPlaceNames(RawPlace place, Country country) {
+    return Collections.singletonMap("en", place.name() + ", " + country.names.get("en"));
+  }
+
+  private static Map<String, String> getPlaceNames(int geoname_id, String standardName, Country country,
+      Map<Integer, List<AlternateName>> alternateNames) {
+    Map<String, String> placeNamesWithoutCountry = getNames(geoname_id, standardName, alternateNames);
+    Map<String, String> names = new HashMap<>();
+    for (String language : placeNamesWithoutCountry.keySet()) {
+      names.put(language, placeNamesWithoutCountry.get(language) + ", " + country.names.get(language));
+    }
+    return names;
+  }
+
+  public Map<String, String> names() {
+    return names;
+  }
+
+  public String ascii_id() {
+    return ascii_id;
+  }
+
+  public BigDecimal latitude() {
+    return latitude;
+  }
+
+  public BigDecimal longitude() {
+    return longitude;
+  }
+
+  public int elevation() {
+    return elevation;
+  }
+
+  public long population() {
+    return population;
+  }
+
+  public String timezone() {
+    return timezone;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(ascii_id, country, elevation, geoname_id, latitude, longitude, names, population,
+        standardName, timezone);
+  }
+
+  @Override
+  public boolean equals(Object obj) {
+    if (this == obj)
+      return true;
+    if (obj == null)
+      return false;
+    if (getClass() != obj.getClass())
+      return false;
+    Place other = (Place) obj;
+    return Objects.equals(ascii_id, other.ascii_id) && Objects.equals(country, other.country)
+        && elevation == other.elevation && geoname_id == other.geoname_id && Objects.equals(latitude, other.latitude)
+        && Objects.equals(longitude, other.longitude) && Objects.equals(names, other.names)
+        && population == other.population && Objects.equals(standardName, other.standardName)
+        && Objects.equals(timezone, other.timezone);
+  }
+
+}
+
+public record RawPlace(int geoname_id, String name, String ascii_name, BigDecimal latitude, BigDecimal longitude,
+    char feature_class, String feature_code, String country_code, long population, int dem, String timezone) {
+
+  public RawPlace(String[] fields) {
+    this(Integer.parseInt(fields[0]), fields[1], fields[2], new BigDecimal(fields[4]), new BigDecimal(fields[5]),
+        fields[6].length() > 0 ? fields[6].charAt(0) : '!', fields[7], fields[8], Long.parseLong(fields[14]),
+        parseDem(fields[16]), fields[17]);
+  }
+
+  private static int parseDem(String dem) {
+    // Some locations seem to have an erroneous elevation, let's assume those are 0.
+    int value = Integer.parseInt(dem);
+    if (value == -9999)
+      return 0;
+    return value;
+  }
+}
+
+public record AlternateName(int alternateNameId, int geoname_id, String isolanguage, String alternateName,
+    boolean isPreferredName, boolean isShortName, boolean isColloquial, boolean isHistoric, String from, String to) {
+  public AlternateName(String[] fields) {
+    this(Integer.parseInt(fields[0]), Integer.parseInt(fields[1]), 3 <= fields.length ? fields[2] : null,
+        4 <= fields.length ? fields[3] : null, 5 <= fields.length ? fields[4].equals("1") : false,
+        6 <= fields.length ? fields[5].equals("1") : false, 7 <= fields.length ? fields[6].equals("1") : false,
+        8 <= fields.length ? fields[7].equals("1") : false, 9 <= fields.length ? fields[8] : null,
+        10 <= fields.length ? fields[9] : null);
+  }
+}

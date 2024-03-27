@@ -1,0 +1,14 @@
+{
+  "compilerOptions": {
+    "module": "es6",
+    "moduleResolution": "bundler",
+    "downlevelIteration": true,
+    "noImplicitAny": true,
+    "removeComments": true,
+    "esModuleInterop": false,
+    "sourceMap": true
+  },
+  "include": [
+    "src/**/*"
+  ]
+}
