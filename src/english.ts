@@ -21,6 +21,10 @@ export const english: Locale = new LocaleImpl("en", "en-gb", new Map([
     <a href="https://www.w3schools.com/html/html5_webstorage.asp" class="externalLink">HTML Web Storage API</a> so that
     they are remembered next time you visit the site.
   `],
+  ["aboutThirdParagraph", () => `
+    The source code for this website is available at
+    <a href="https://github.com/jonaslind/ljusa.re" class="externalLink">github.com/jonaslind/ljusa.re</a>.
+  `],
   ["licenseUsageParagraph",
     (repository: string, name: string, author: string, license: string, usage: string, type: string) =>
       "This website uses " + usage + " the" +

@@ -21,6 +21,10 @@ export const swedish: Locale = new LocaleImpl("se", "sv", new Map([
     <a href="https://www.w3schools.com/html/html5_webstorage.asp" class="externalLink">HTMLs Web Storage-gränssnitt</a>
     så att de kan visas vid ditt nästa besök på webbsidan.
   `],
+  ["aboutThirdParagraph", () => `
+    Källkoden för denna webbsida finns tillgänglig på
+    <a href="https://github.com/jonaslind/ljusa.re" class="externalLink">github.com/jonaslind/ljusa.re</a>.
+  `],
   ["licenseUsageParagraph",
     (repository: string, name: string, author: string, license: string, usage: string, type: string) =>
       "Denna webbsida använder " + usage + " " + type +
