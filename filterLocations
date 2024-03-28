@@ -282,7 +282,9 @@ public static class LocationFilterer {
     rawPopulatedPlacesInCountry.sort(Comparator.comparing((RawPlace rawPlace) -> {
       BigDecimal longitude = rawPlace.longitude();
       if (countryCode.equals("RU") || countryCode.equals("FJ")) {
-        return longitude.add(BigDecimal.valueOf(360));
+        if (longitude.compareTo(BigDecimal.valueOf(0)) < 0) {
+          return longitude.add(BigDecimal.valueOf(360));
+        }
       }
       return longitude;
     }).thenComparing(RawPlace::population).thenComparing(RawPlace::geoname_id));
