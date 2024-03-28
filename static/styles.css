@@ -47,12 +47,23 @@ p {
   float: right;
 }
 
+.chartControls {
+  text-align: left;
+  margin-top: 0px;
+  margin-left: 2rem;
+}
+
 #localeToggle {
   cursor: pointer;
   font-style: normal;
 }
 
 #lightOrDarkStyleToggle {
+  cursor: pointer;
+  font-style: normal;
+}
+
+#yAxisDirectionToggle {
   cursor: pointer;
   font-style: normal;
 }

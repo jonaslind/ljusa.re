@@ -17,9 +17,9 @@ export const english: Locale = new LocaleImpl("en", "en-gb", new Map([
     Times are calculated using
     <a href="https://en.wikipedia.org/wiki/Sunrise_equation" class="externalLink">Wikipedia's sunrise equation</a>. All
     calculations are performed by your browser, there is no server-side logic. Your chosen theme (light or dark), your
-    chosen language and your chosen places are stored locally in your browser using the
+    chosen language, your chosen y-axis direction and your chosen places are stored locally in your browser using the
     <a href="https://www.w3schools.com/html/html5_webstorage.asp" class="externalLink">HTML Web Storage API</a> so that
-    they are remembered next time you visit the site.
+    they are remembered the next time you visit the site.
   `],
   ["aboutThirdParagraph", () => `
     The source code for this website is available at

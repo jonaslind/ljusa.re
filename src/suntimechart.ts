@@ -1,5 +1,6 @@
 import { CategoryScale, Chart, ChartDataset, ChartTypeRegistry, Color, LinearScale, LineController, LineElement, PointElement, ScriptableScaleContext, Tooltip, TooltipItem, TooltipLabelStyle } from "chart.js";
 import { DateTime } from "luxon";
+import { ChartOptions } from "./chartcontrols";
 import { Locale } from "./locale";
 import { Location } from "./locations";
 import { ColorInfo } from "./styles";
@@ -13,6 +14,8 @@ export class SuntimeChart {
   private colorInfo: ColorInfo;
 
   private locale: Locale;
+
+  private chartOptions: ChartOptions;
 
   private sunTimeData: SunTimeData;
 
@@ -29,6 +32,11 @@ export class SuntimeChart {
 
   colorsChanged(colorInfo: ColorInfo) {
     this.colorInfo = colorInfo;
+    this.updateSuntimes();
+  }
+
+  chartOptionsChanged(chartOptions: ChartOptions) {
+    this.chartOptions = chartOptions;
     this.updateSuntimes();
   }
 
@@ -103,7 +111,7 @@ export class SuntimeChart {
   }
 
   private updateSuntimes() {
-    if (this.colorInfo == null || this.sunTimeData == null || this.sunTimeData.data.length == 0) {
+    if (this.colorInfo == null || this.sunTimeData == null || this.chartOptions == null || this.sunTimeData.data.length == 0) {
       if (this.chart != null) {
         this.chart.destroy();
       }
@@ -165,6 +173,7 @@ export class SuntimeChart {
         maintainAspectRatio: false,
         scales: {
           y: {
+            reverse: this.chartOptions.flipYAxis,
             ticks: {
               callback: (value: number) => { return this.yAxisLabel(value); },
               stepSize: 30 * 60

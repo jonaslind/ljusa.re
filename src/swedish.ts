@@ -17,7 +17,8 @@ export const swedish: Locale = new LocaleImpl("se", "sv", new Map([
     Klockslagen beräknas enligt
     <a href="https://en.wikipedia.org/wiki/Sunrise_equation" class="externalLink">Wikipedias soluppgångsekvation</a>.
     Alla beräkningar utförs i din webbläsare, det finns ingen logik på serversidan. Ditt val av tema (ljust eller
-    mörkt), ditt val av språk samt de platser du valt lagras lokalt i din webbläsare med hjälp av
+    mörkt), ditt val av språk, ditt val av riktning på y-axeln samt de platser du valt lagras lokalt i din webbläsare
+    med hjälp av
     <a href="https://www.w3schools.com/html/html5_webstorage.asp" class="externalLink">HTMLs Web Storage-gränssnitt</a>
     så att de kan visas vid ditt nästa besök på webbsidan.
   `],
