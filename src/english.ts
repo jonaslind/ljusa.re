@@ -1,7 +1,7 @@
 import { Locale, LocaleImpl } from "./locale";
 
 export const english: Locale = new LocaleImpl("en", "en-gb", new Map([
-  ["bodyTitle", () => "Brighter"],
+  ["bodyTitle", () => "ljusa.re"],
   ["placesLabel", () => "Places"],
   ["locationSelector", () => "Add place"],
   ["startLink", () => "Start"],
