@@ -1,5 +1,6 @@
 import { DateTime } from "luxon";
 import { Location } from "./locations";
+import { QuarterInfo } from "./quarters";
 import { SunTime } from "./suntime";
 
 export interface SunTimeDataSeries {
@@ -22,10 +23,12 @@ export class SunTimes {
   private daysSinceFirstDate: number[] = [];
   private dataCache: Map<String, SunTime[]> = new Map<String, SunTime[]>();
   private suntimeData: SunTimeData;
+  private quarter: QuarterInfo;
+  private locations: Location[];
 
   initSunTimes() {
     this.loadDates();
-    this.createSuntimeData([]);
+    this.createSuntimeData();
   }
 
   registerChangeCallback(callback: ((sunTimeData: SunTimeData) => void)): void {
@@ -34,16 +37,32 @@ export class SunTimes {
   }
 
   locationsChanged(locations: Location[]) {
-    this.createSuntimeData(locations);
+    this.locations = locations;
+    this.createSuntimeData();
+    this.callbacks.forEach((callback: ((sunTimeData: SunTimeData) => void)) => {
+      callback(this.suntimeData);
+    });
+  }
+
+  quarterChanged(quarter: QuarterInfo) {
+    this.quarter = quarter;
+    this.loadDates();
+    this.createSuntimeData();
     this.callbacks.forEach((callback: ((sunTimeData: SunTimeData) => void)) => {
       callback(this.suntimeData);
     });
   }
 
   private loadDates() {
-    const startDate: DateTime = SunTimes.firstMondayInJanuary(DateTime.now().year);
-    const endDate: DateTime = SunTimes.firstSundayInApril(DateTime.now().year);
-    const today: DateTime = SunTimes.getToday();
+    if (this.quarter == null) {
+      return;
+    }
+    const startDate: DateTime = this.quarter.firstDay;
+    const endDate: DateTime = this.quarter.lastDay;
+    const today: DateTime = this.quarter.today;
+    this.dates = [];
+    this.daysSinceFirstDate = [];
+    this.indexOfToday = -1;
     for (var date: DateTime = startDate; date.toUnixInteger() <= endDate.toUnixInteger(); date = date.plus({ days: 1 })) {
       this.dates.push(date);
       if (date.hasSame(today, 'day')) {
@@ -55,9 +74,12 @@ export class SunTimes {
     }
   }
 
-  private createSuntimeData(locations: Location[]) {
+  private createSuntimeData() {
+    if (this.dates.length == 0 || this.locations == null) {
+      return;
+    }
     const series: SunTimeDataSeries[] = [];
-    locations.forEach((location: Location) => {
+    this.locations.forEach((location: Location) => {
       series.push({
         location: location,
         sunTimes: this.getSunTimes(location)
@@ -72,42 +94,18 @@ export class SunTimes {
   }
 
   private getSunTimes(location: Location): SunTime[] {
-    if (!this.dataCache.has(location.id)) {
+    const cacheId: string = location.id + "_" + this.quarter;
+    if (!this.dataCache.has(cacheId)) {
       const suntimes: SunTime[] = [];
       this.dates.forEach((date) => {
         const localDate: DateTime = DateTime.fromObject({ year: date.year, month: date.month, day: date.day, hour: date.hour }, { zone: location.zone });
         const suntime: SunTime = SunTime.fromTimestampAndLocation(localDate.toUnixInteger(), localDate.zone, location.latitude, location.longitude, location.elevation);
         suntimes.push(suntime);
       });
-      this.dataCache.set(location.id, suntimes);
+      this.dataCache.set(cacheId, suntimes);
     }
-    return this.dataCache.get(location.id);
+    return this.dataCache.get(cacheId);
   }
 
-  private static getToday(): DateTime {
-    return DateTime.now().set({ hour: 12, minute: 0, second: 0, millisecond: 0 });
-  }
-
-  private static firstMondayInJanuary(year: number): DateTime {
-    const noonFirstOfJanuary: DateTime = DateTime.now().set({ year: year, month: 1, day: 1, hour: 12, minute: 0, second: 0, millisecond: 0 });
-    for (var i: number = 1; i <= 7; i++) {
-      const candidate: DateTime = noonFirstOfJanuary.set({ day: i });
-      if (candidate.weekday == 1) {
-        return candidate;
-      }
-    }
-    throw new Error("Cannot find a Monday in January");
-  }
-
-  private static firstSundayInApril(year: number): DateTime {
-    const noonFirstOfApril: DateTime = DateTime.now().set({ year: year, month: 4, day: 1, hour: 12, minute: 0, second: 0, millisecond: 0 });
-    for (var i: number = 1; i <= 7; i++) {
-      const candidate: DateTime = noonFirstOfApril.set({ day: i });
-      if (candidate.weekday == 7) {
-        return candidate;
-      }
-    }
-    throw new Error("Cannot find a Sunday in April");
-  }
 
 }

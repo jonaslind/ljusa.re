@@ -2,6 +2,7 @@ import { Locale, LocaleImpl } from "./locale";
 
 export const swedish: Locale = new LocaleImpl("se", "sv", new Map([
   ["bodyTitle", () => "ljusa.re"],
+  ["quarterTitle", (year: string, quarter: string) => "Kvartal " + quarter + " " + year],
   ["placesLabel", () => "Platser"],
   ["locationSelector", () => "Lägg till plats"],
   ["startLink", () => "Start"],

@@ -11,6 +11,10 @@ Chart.register(LineController, LineElement, PointElement, CategoryScale, LinearS
 
 export class SuntimeChart {
 
+  private static SECONDS_IN_HOUR: number = 60 * 60;
+
+  private static SECONDS_IN_HALF_HOUR: number = 30 * 60;
+
   private colorInfo: ColorInfo;
 
   private locale: Locale;
@@ -78,14 +82,14 @@ export class SuntimeChart {
   }
 
   private yAxisLabel(value: number): string {
-    if (value % (60 * 60) != 0) {
+    if (value % (SuntimeChart.SECONDS_IN_HOUR) != 0) {
       return "";
     }
     return secondsOfDayToString(BigInt(value));
   }
 
   private yAxisLineColor(context: ScriptableScaleContext): Color {
-    if (context.tick.value % (60 * 60) != 0) {
+    if (context.tick.value % (SuntimeChart.SECONDS_IN_HOUR) != 0) {
       return this.colorInfo.lineColorLight;
     }
     return this.colorInfo.lineColorHeavy;
@@ -117,6 +121,10 @@ export class SuntimeChart {
       }
       return;
     }
+    // high value so that we're sure to encounter a smaller one
+    var minValue: number = 24 * SuntimeChart.SECONDS_IN_HOUR;
+    // low value so that we're sure to encounter a higher one
+    var maxValue: number = 0;
     const datasets: ChartDataset[] = [];
     for (var i: number = 0; i < this.sunTimeData.data.length; i++) {
       const sunTimeDataSeries: SunTimeDataSeries = this.sunTimeData.data[i];
@@ -127,8 +135,20 @@ export class SuntimeChart {
 
       for (var j: number = 0; j < this.sunTimeData.dates.length; j++) {
         const suntime: SunTime = suntimes[j];
-        sunriseData.push(suntime.sunrise != null ? Number(suntime.sunrise) : null);
-        sunsetData.push(suntime.sunset != null ? Number(suntime.sunset) : null);
+        if (suntime.sunrise != null) {
+          const value: number = Number(suntime.sunrise);
+          sunriseData.push(value);
+          minValue = Math.min(minValue, value);
+        } else {
+          sunriseData.push(null);
+        }
+        if (suntime.sunset != null) {
+          const value: number = Number(suntime.sunset);
+          sunsetData.push(value);
+          maxValue = Math.max(maxValue, value);
+        } else {
+          sunsetData.push(null);
+        }
       }
 
       datasets.push({
@@ -146,6 +166,10 @@ export class SuntimeChart {
         pointStyle: false
       });
     }
+    // round down to nearest whole hour
+    minValue = Math.floor(minValue / SuntimeChart.SECONDS_IN_HOUR) * SuntimeChart.SECONDS_IN_HOUR;
+    // round up to nearest whole hour
+    maxValue = Math.ceil(maxValue / SuntimeChart.SECONDS_IN_HOUR) * SuntimeChart.SECONDS_IN_HOUR;
 
     const chartCanvas: HTMLCanvasElement = <HTMLCanvasElement> document.getElementById('chartCanvas');
 
@@ -174,9 +198,11 @@ export class SuntimeChart {
         scales: {
           y: {
             reverse: this.chartOptions.flipYAxis,
+            suggestedMin: minValue,
+            suggestedMax: maxValue,
             ticks: {
               callback: (value: number) => { return this.yAxisLabel(value); },
-              stepSize: 30 * 60
+              stepSize: SuntimeChart.SECONDS_IN_HALF_HOUR
             },
             grid: {
               color: (context: ScriptableScaleContext) => { return this.yAxisLineColor(context); },
