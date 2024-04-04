@@ -59,6 +59,10 @@ class QuarterInfoImpl implements QuarterInfo {
   }
 
   static fromYearAndQuarter(year: number, quarter: number): QuarterInfoImpl {
+    if (quarter < 0 || 4 < quarter) {
+      console.log("Bad quarter " + quarter);
+      return QuarterInfoImpl.current();
+    }
     return new QuarterInfoImpl(
       year.toString(),
       quarter.toString(),
@@ -73,20 +77,12 @@ class QuarterInfoImpl implements QuarterInfo {
   }
 
   private static firstDayOfQuarter(year: number, quarter: number): DateTime {
-    if (quarter < 0 || 4 < quarter) {
-      console.log("Bad quarter " + quarter);
-      return QuarterInfoImpl.firstDayOfQuarter(year, 1);
-    }
     const month = (quarter * 3) - 2;
     return DateTime.now()
       .set({ year: year, month: month, day: 1, hour: 12, minute: 0, second: 0, millisecond: 0 });
   }
 
   private static firstMondayBeforeOrAtStartOfQuarter(year: number, quarter: number): DateTime {
-    if (quarter < 0 || 4 < quarter) {
-      console.log("Bad quarter " + quarter);
-      return QuarterInfoImpl.firstMondayBeforeOrAtStartOfQuarter(year, 1);
-    }
     const month = (quarter * 3) - 2;
     const noonFirstOfMonth: DateTime = DateTime.now()
       .set({ year: year, month: month, day: 1, hour: 12, minute: 0, second: 0, millisecond: 0 });
@@ -155,6 +151,16 @@ export class Quarters {
     this.updateQuarter();
   }
 
+  refreshQuarter() {
+    if (window.location.hash) {
+      this.quarter = QuarterInfoImpl.fromString(window.location.hash.substring(1));
+      window.location.hash = this.quarter.toString();
+    } else {
+      this.quarter = QuarterInfoImpl.current();
+    }
+    this.updateQuarter();
+  }
+
   private updateQuarter() {
     if (this.locale == null || this.quarter == null) {
       return;
@@ -168,16 +174,12 @@ export class Quarters {
   }
 
   private loadQuarter() {
-    if (window.location.hash) {
-      this.quarter = QuarterInfoImpl.fromString(window.location.hash.substring(1));
-    } else {
-      this.quarter = QuarterInfoImpl.current();
-    }
-    this.updateQuarter();
+    this.refreshQuarter();
     const prevQuarterLink: HTMLElement = document.getElementById("prevQuarterLink");
     prevQuarterLink.addEventListener("click", (event: Event) => { this.prevQuarter() });
     const nextQuarterLink: HTMLElement = document.getElementById("nextQuarterLink");
     nextQuarterLink.addEventListener("click", (event: Event) => { this.nextQuarter() });
+    window.addEventListener("hashchange", () => { this.refreshQuarter() });
   }
 
 }
