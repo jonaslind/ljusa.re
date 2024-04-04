@@ -4,6 +4,7 @@ import { Locale } from "./locale";
 import { Locales } from "./locales";
 import { Location } from "./locations";
 import { LocationSelectors } from "./locationselectors";
+import { QuarterInfo, Quarters } from "./quarters";
 import { ColorInfo, Styles } from "./styles";
 import { SuntimeChart } from "./suntimechart";
 import { SunTimeData, SunTimes } from "./suntimes";
@@ -24,6 +25,9 @@ window.onload = function() {
   const locationSelectors: LocationSelectors = new LocationSelectors();
   locationSelectors.initLocationSelectors();
 
+  const quarters: Quarters = new Quarters();
+  quarters.initQuarters();
+
   const sunTimes: SunTimes = new SunTimes();
   sunTimes.initSunTimes();
 
@@ -33,8 +37,11 @@ window.onload = function() {
   locales.registerChangeCallback((locale: Locale) => { suntimeChart.localeChanged(locale) });
   locales.registerChangeCallback((locale: Locale) => { locationSelectors.localeChanged(locale) });
   locales.registerChangeCallback((locale: Locale) => { licenses.localeChanged(locale) });
+  locales.registerChangeCallback((locale: Locale) => { quarters.localeChanged(locale) });
 
   chartControls.registerChangeCallback((chartOptions: ChartOptions) => { suntimeChart.chartOptionsChanged(chartOptions) });
+
+  quarters.registerChangeCallback((quarter: QuarterInfo) => { sunTimes.quarterChanged(quarter) });
 
   sunTimes.registerChangeCallback((sunTimeData: SunTimeData) => { suntimeChart.dataChanged(sunTimeData) });
 
