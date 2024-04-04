@@ -11,8 +11,7 @@ export const swedish: Locale = new LocaleImpl("se", "sv", new Map([
   ["chartSunriseLabel", (location: string) => "Soluppgång i " + location],
   ["chartSunsetLabel", (location: string) => "Solnedgång i " + location],
   ["aboutFirstParagraph", () => `
-    Denna webbsida visar klockslag för soluppgång och solnedgång i valda platsers lokala tidszon. Grafen börjar den
-    första måndagen i nuvarande år, och slutar den första söndagen i april.
+    Denna webbsida visar klockslag för soluppgång och solnedgång i valda platsers lokala tidszon.
   `],
   ["aboutSecondParagraph", () => `
     Klockslagen beräknas enligt

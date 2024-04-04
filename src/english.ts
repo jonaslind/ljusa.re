@@ -11,8 +11,7 @@ export const english: Locale = new LocaleImpl("en", "en-gb", new Map([
   ["chartSunriseLabel", (location: string) => "Sunrise in " + location],
   ["chartSunsetLabel", (location: string) => "Sunset in " + location],
   ["aboutFirstParagraph", () => `
-    This website displays the sunset and sunrise times of the selected places in each place's local timezone. The graph
-    starts at the first Monday of the current year and ends at the first Sunday in April.
+    This website displays the sunset and sunrise times of the selected places in each place's local timezone.
   `],
   ["aboutSecondParagraph", () => `
     Times are calculated using
