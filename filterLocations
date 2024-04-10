@@ -374,6 +374,9 @@ public static class LocationFilterer {
     case "AT", "BE", "BG", "HR", "CY", "CZ", "DK", "EE", "FI", "FR", "DE", "GR", "HU", "IE", "IT", "LV", "LT", "LU",
         "MT", "NL", "PL", "PT", "RO", "SK", "SI", "ES" ->
       10;
+    // EFTA
+    case "IS", "LI", "NO", "CH" ->
+      10;
     case "GB" -> 10;
     // To include Las Vegas, Miami and New Orleans
     case "US" -> 30;
