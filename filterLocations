@@ -28,6 +28,11 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
 private static final Set<String> LANGUAGES = Collections.unmodifiableSet(Set.of("en", "sv"));
+private static final Set<Integer> IGNORED_GEONAME_IDS = Collections.unmodifiableSet(Set.of(
+    // Emerald Lake, Antarctica and Algal, Antarctica are coded as populated places, but they are in fact lakes
+    6628970,
+    6630654
+  ));
 
 // Places in a country are not allowed to be closer than 50 km
 private static final int GLOBAL_NEARNESS_LIMIT = 50;
@@ -104,7 +109,7 @@ public void main(String[] args) {
   try {
     new LocationsTypescriptSourceFileUpdater(locationsTypescriptSourceFile)
         .updateSourceFile(new LocationFilterer(countriesZipPath, countriesDataFile, namesZipPath, namesDataFile,
-            LANGUAGES, GLOBAL_NEARNESS_LIMIT).getPlaces());
+            LANGUAGES, GLOBAL_NEARNESS_LIMIT, IGNORED_GEONAME_IDS).getPlaces());
   } catch (IOException e) {
     e.printStackTrace();
     System.exit(1);
@@ -179,22 +184,24 @@ public static class LocationFilterer {
   private final String namesDataFile;
   private final Set<String> languages;
   private final int globalNearnessLimit;
+  private final Set<Integer> ignoredGeonameIds;
 
   public LocationFilterer(Path countriesZipPath, String countriesDataFile, Path namesZipPath, String namesDataFile,
-      Set<String> languages, int globalNearnessLimit) {
+      Set<String> languages, int globalNearnessLimit, Set<Integer> ignoredGeonameIds) {
     this.countriesZipPath = countriesZipPath;
     this.countriesDataFile = countriesDataFile;
     this.namesZipPath = namesZipPath;
     this.namesDataFile = namesDataFile;
     this.languages = languages;
     this.globalNearnessLimit = globalNearnessLimit;
+    this.ignoredGeonameIds = ignoredGeonameIds;
 
   }
 
   public List<Place> getPlaces() throws IOException {
     System.out.println("Parsing places from " + countriesZipPath);
     long start = System.currentTimeMillis();
-    Map<String, List<RawPlace>> rawPlaces = parsePlaces(countriesZipPath, countriesDataFile);
+    Map<String, List<RawPlace>> rawPlaces = parsePlaces(countriesZipPath, countriesDataFile, ignoredGeonameIds);
     long end = System.currentTimeMillis();
     long time = end - start;
     System.out.println("Done, took " + (new BigDecimal(BigInteger.valueOf(time), 3).toString()) + " seconds");
@@ -353,14 +360,15 @@ public static class LocationFilterer {
     return alternateNames;
   }
 
-  private static Map<String, List<RawPlace>> parsePlaces(Path countriesZipPath, String countriesDataFile)
-      throws IOException {
+  private static Map<String, List<RawPlace>> parsePlaces(Path countriesZipPath, String countriesDataFile,
+      Set<Integer> ignoredGeonameIds) throws IOException {
     Map<String, List<RawPlace>> rawPlaces;
     try (ZipFile zipFile = new ZipFile(countriesZipPath.toFile())) {
       ZipEntry entry = zipFile.getEntry(countriesDataFile);
       try (BufferedReader reader = new BufferedReader(
           new InputStreamReader(zipFile.getInputStream(entry), StandardCharsets.UTF_8))) {
         rawPlaces = reader.lines().parallel().map(line -> line.split("\t")).map(fields -> new RawPlace(fields))
+            .filter(place -> !ignoredGeonameIds.contains(place.geoname_id))
             .collect(Collectors.groupingBy(RawPlace::country_code));
       }
     }
