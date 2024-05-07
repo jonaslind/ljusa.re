@@ -6,40 +6,19 @@
   <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:light,regular,bold,extrabold">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto+Mono:regular">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Ljusa.re</title>
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <title>ljusa.re</title>
   <link rel="icon" href="favicon.svg">
   <link rel="stylesheet" href="solarized.css">
   <link rel="stylesheet" href="styles.css">
-  <link rel="stylesheet" href="light.css">
-  <link rel="stylesheet" href="dark.css">
+  <link rel="stylesheet" href="style-light.css">
+  <link rel="stylesheet" href="style-dark.css">
   <script src="bundle.js"></script>
+  <script defer src="bundle.js"></script>
 </head>
 
 <body>
-  <p class="topMenu"><i id="localeToggle">🇸🇪 🇬🇧</i> | <i id="lightOrDarkStyleToggle">☀️ 🌙</i></p>
-  <h1><a href="/" id="linkToStart" data-i18n-key="bodyTitle">Sunrise and Sunset</a></h1>
-
-  <p data-i18n-key="aboutFirstParagraph">
-    First paragraph.
-  </p>
-
-  <p data-i18n-key="aboutSecondParagraph">
-    Second paragraph.
-  </p>
-
-  <p data-i18n-key="aboutThirdParagraph">
-    Third paragraph.
-  </p>
-
-  <div id="licenses">
-  </div>
-
-  <p id="footer">
-    <a href="/" class="internalLink" data-i18n-key="startLink">Start</a>
-    |
-    <a href="about.html" class="internalLink" data-i18n-key="aboutAndLicenseLink">About and License Information</a>
-  </p>
-
+  <div id="app"></div>
 </body>
 
 </html>

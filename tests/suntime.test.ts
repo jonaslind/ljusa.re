@@ -1,14 +1,14 @@
 import { DateTime } from "luxon";
-import { Location, locations } from "../src/locations";
-import { SunTime, secondsOfDayNoRolloverToString, secondsOfDayToString } from "../src/suntime";
+import { Location, Locations } from "../src/Location";
+import { SunTime, secondsOfDayNoRolloverToString, secondsOfDayToString } from "../src/SunTime";
 
-const stockholm: Location = locations.get("stockholm_sweden")!;
-const montreal: Location = locations.get("montreal_canada")!;
-const ilulissat: Location = locations.get("ilulissat_greenland")!;
-const baku: Location = locations.get("baku_azerbaijan")!;
-const mcmurdo: Location = locations.get("mcmurdo_station_antarctica")!;
+const stockholm: Location = new Locations().getLocationForId("stockholm_sweden")!;
+const montreal: Location = new Locations().getLocationForId("montreal_canada")!;
+const ilulissat: Location = new Locations().getLocationForId("ilulissat_greenland")!;
+const baku: Location = new Locations().getLocationForId("baku_azerbaijan")!;
+const mcmurdo: Location = new Locations().getLocationForId("mcmurdo_station_antarctica")!;
 
-locations.forEach((location) => {
+new Locations().getAll().forEach((location) => {
   const dates: DateTime[] = [
     DateTime.fromObject({ year: 2024, month: 1, day: 1, hour: 12 }, { zone: location.zone }),
     DateTime.fromObject({ year: 2024, month: 4, day: 1, hour: 12 }, { zone: location.zone }),

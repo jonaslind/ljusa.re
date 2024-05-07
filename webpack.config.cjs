@@ -1,10 +1,11 @@
 const path = require('path');
 const TerserPlugin = require('terser-webpack-plugin');
-const LicensePlugin = require('webpack-license-plugin')
+const LicensePlugin = require('webpack-license-plugin');
+const HtmlWebpackPlugin = require("html-webpack-plugin");
 const fs = require('fs')
 
 module.exports = {
-  entry: './src/main.ts',
+  entry: './src/App.ts',
   mode: 'production',
   module: {
     rules: [
@@ -53,6 +54,11 @@ module.exports = {
           return JSON.stringify(packagesWithUsage, null, 2);
         },
       }
-    })
+    }),
+    new HtmlWebpackPlugin({
+      template: "./static/index.html",
+      inject: false,
+      minify: false
+    }),
   ],
 };

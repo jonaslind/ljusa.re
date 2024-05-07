@@ -1,11 +1,46 @@
 export interface Locale {
+  readonly discriminator: 'Locale-Interface';
   readonly name: string;
   readonly language: string;
   readonly keys: string[];
   getMessage(key: string, ...args: string[]): string;
 }
 
+function instanceOfLocale(object: any): object is Locale {
+  return object.discriminator === 'Locale-Interface';
+}
+
+export interface Locales {
+  default: () => Locale;
+  getLocale: (name: string) => Locale;
+}
+
+export class LocaleSerializer {
+  private locales: Locales;
+  stringify: (value: unknown) => string = (value: unknown) => this.serializeUnknown(value);
+  parse: (value: string) => Locale = (value: string) => this.deserialize(value);
+
+  constructor(locales: Locales) {
+    this.locales = locales;
+  }
+
+  private serializeUnknown(value: unknown): string {
+    if (instanceOfLocale(value))
+      return this.serialize(value);
+    throw new Error("Cannot serialize " + value + " into Locale");
+  }
+
+  private serialize(locale: Locale): string {
+    return locale.name;
+  }
+
+  private deserialize(name: string): Locale {
+    return this.locales.getLocale(name);
+  }
+}
+
 export class LocaleImpl implements Locale {
+  readonly discriminator: 'Locale-Interface' = 'Locale-Interface';
   private _name: string;
   private _language: string;
   private _messages: Map<string, (...args: string[]) => string>;

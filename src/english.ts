@@ -1,4 +1,4 @@
-import { Locale, LocaleImpl } from "./locale";
+import { Locale, LocaleImpl } from "./Locale";
 
 export const english: Locale = new LocaleImpl("en", "en-gb", new Map([
   ["bodyTitle", () => "ljusa.re"],

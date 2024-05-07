@@ -6,46 +6,19 @@
   <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:light,regular,bold,extrabold">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto+Mono:regular">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
   <title>ljusa.re</title>
   <link rel="icon" href="favicon.svg">
   <link rel="stylesheet" href="solarized.css">
   <link rel="stylesheet" href="styles.css">
-  <link rel="stylesheet" href="light.css">
-  <link rel="stylesheet" href="dark.css">
+  <link rel="stylesheet" href="style-light.css">
+  <link rel="stylesheet" href="style-dark.css">
   <script src="bundle.js"></script>
+  <script defer src="bundle.js"></script>
 </head>
 
 <body>
-  <p class="topMenu"><i id="localeToggle">🇸🇪 🇬🇧</i> | <i id="lightOrDarkStyleToggle">☀️ 🌙</i></p>
-  <h1><a href="/" id="linkToStart" data-i18n-key="bodyTitle">Sunrise and Sunset</a></h1>
-
-  <label data-i18n-key="placesLabel">Places</label>
-  <div class="chosenLocations" id="chosenLocations">
-  </div>
-
-  <datalist id="locationDataList">
-  </datalist>
-  <div class="locationSelectorContainer">
-    <i class="searchIcon">🔍</i>
-    <input type="text" name="locationSelector" id="locationSelector" class="locationSelector" list="locationDataList" placeholder="Add place" data-i18n-key="locationSelector">
-  </div>
-
-  <h2><i id="prevQuarterLink">◂</i> <i id="quarterTitle">quarter</i> <i id="nextQuarterLink">▸</i></h2>
-
-  <div class="chart-container-outer">
-    <div class="chart-container">
-      <canvas id="chartCanvas"></canvas>
-    </div>
-  </div>
-
-  <p class="chartControls"><i id="yAxisDirectionToggle">⇅</i></p>
-
-  <p id="footer">
-    <a href="/" class="internalLink" data-i18n-key="startLink">Start</a>
-    |
-    <a href="about.html" class="internalLink" data-i18n-key="aboutAndLicenseLink">About and License Information</a>
-  </p>
-
+  <div id="app"></div>
 </body>
 
 </html>

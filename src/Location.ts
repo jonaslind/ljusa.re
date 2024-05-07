@@ -35,6 +35,84 @@ export class Location {
 
 }
 
+export class LocationArray extends Array<Location>{
+  readonly discriminator: 'LocationArray-Class' = 'LocationArray-Class';
+  constructor(...items: Location[]) {
+    super(...items);
+  }
+}
+
+function instanceOfLocationArray(object: any): object is LocationArray {
+  return object.discriminator === 'LocationArray-Class';
+}
+
+export class Locations {
+
+  public default(): LocationArray {
+    return new LocationArray(locations.get("stockholm_sweden")!);
+  }
+
+  public getAllUnselected(selectedLocations: LocationArray): LocationArray {
+    return new LocationArray(...new Array(...locations.values())
+      .filter((location: Location) => !selectedLocations.includes(location)));
+  }
+
+  public getAll(): LocationArray {
+    return new LocationArray(...locations.values());
+  }
+
+  public getLocationForId(id: string): Location | null {
+    const location: Location | undefined = locations.get(id);
+    if (location === undefined) {
+      return null;
+    }
+    return location;
+  }
+  public getLocationForName(name: string): Location | null {
+    for (const [key, value] of locations) {
+      if (value.hasName(name)) {
+        return value;
+      }
+    }
+    return null;
+  }
+}
+
+export class LocationArraySerializer {
+
+  stringify: (value: unknown) => string = (value: unknown) => this.serializeUnknown(value);
+  parse: (value: string) => LocationArray = (value: string) => this.deserialize(value);
+  private locations: Locations;
+
+  constructor(locations: Locations) {
+    this.locations = locations;
+  }
+
+  private serializeUnknown(value: unknown): string {
+    if (instanceOfLocationArray(value))
+      return this.serialize(value);
+    throw new Error("Cannot serialize " + value + " into LocationArray");
+  }
+
+  private serialize(selectedLocations: LocationArray): string {
+    const selectedLocationIds: string[] = [];
+    selectedLocations.forEach((location: Location) => selectedLocationIds.push(location.id));
+    return JSON.stringify(selectedLocationIds);
+  }
+
+  private deserialize(selectedLocationIdsString: string): LocationArray {
+    const selectedLocations: Location[] = [];
+    const selectedLocationsArray: string[] = JSON.parse(selectedLocationIdsString);
+    selectedLocationsArray.forEach((selectedLocation) => {
+      const location: Location | null = this.locations.getLocationForId(selectedLocation);
+      if (location !== null) {
+        selectedLocations.push(location);
+      }
+    });
+    return new LocationArray(...selectedLocations);
+  }
+}
+
 /*
   The locations in this map are from the  GeoNames dataset (https://www.geonames.org), licensed under the CC BY 4.0
   License:
@@ -45,7 +123,7 @@ export class Location {
   The locations are sorted alphabetically by their key.
 */
 
-export const locations: Map<string, Location> = new Map<string, Location>([
+const locations: Map<string, Location> = new Map<string, Location>([
   // _BEGIN_LOCATIONS_
   ["_ibri_oman", new Location("_ibri_oman", 23.22573, 56.51572, 359, new Map([["en-gb", "Ibri, Oman"], ["sv", "‘Ibrī, Oman"]]), new IANAZone("Asia/Muscat"))],
   ["aalborg_denmark", new Location("aalborg_denmark", 57.048, 9.9187, 10, new Map([["en-gb", "Aalborg, Denmark"], ["sv", "Ålborg, Danmark"]]), new IANAZone("Europe/Copenhagen"))],
@@ -1743,11 +1821,4 @@ export const locations: Map<string, Location> = new Map<string, Location>([
   // _END_LOCATIONS_
 ]);
 
-export function getLocationIdForName(name: string): string | null {
-  for (const [key, value] of locations) {
-    if (value.hasName(name)) {
-      return key;
-    }
-  }
-  return null;
-}
+

@@ -1,10 +1,25 @@
 import { DateTime } from "luxon";
-import { Locale } from "./locale";
 
 export interface QuarterInfo {
+  year: string;
+  quarter: string;
   firstDay: DateTime;
   lastDay: DateTime;
   today: DateTime;
+  previous: (() => QuarterInfo);
+  next: (() => QuarterInfo);
+  toString: (() => string);
+}
+
+export class QuarterInfoSerializer {
+
+  public serialize(quarter: QuarterInfo): string {
+    return quarter.toString();
+  }
+
+  public deserialize(quarterString: string): QuarterInfo {
+    return QuarterInfoImpl.fromString(quarterString);
+  }
 }
 
 class QuarterInfoImpl implements QuarterInfo {
@@ -25,20 +40,20 @@ class QuarterInfoImpl implements QuarterInfo {
     this.today = today;
   }
 
-  previous(): QuarterInfoImpl {
+  public previous(): QuarterInfoImpl {
     const newFirstDayInQuarter: DateTime = this.firstDayInQuarter.minus({ months: 3 });
     return QuarterInfoImpl.fromYearAndQuarter(newFirstDayInQuarter.year, newFirstDayInQuarter.quarter);
   }
-  next(): QuarterInfoImpl {
+  public next(): QuarterInfoImpl {
     const newFirstDayInQuarter: DateTime = this.firstDayInQuarter.plus({ months: 3 });
     return QuarterInfoImpl.fromYearAndQuarter(newFirstDayInQuarter.year, newFirstDayInQuarter.quarter);
   }
 
-  toString(): string {
+  public toString(): string {
     return this.year + "-" + this.quarter;
   }
 
-  static fromString(str: string): QuarterInfoImpl {
+  public static fromString(str: string): QuarterInfoImpl {
     const parts: string[] = str.split('-');
     if (parts.length != 2) {
       console.log("Bad quarter representation " + str);
@@ -53,12 +68,12 @@ class QuarterInfoImpl implements QuarterInfo {
     return QuarterInfoImpl.fromYearAndQuarter(year, quarter);
   }
 
-  static current(): QuarterInfoImpl {
+  public static current(): QuarterInfoImpl {
     const today: DateTime = QuarterInfoImpl.getToday();
     return QuarterInfoImpl.fromYearAndQuarter(today.year, today.quarter);
   }
 
-  static fromYearAndQuarter(year: number, quarter: number): QuarterInfoImpl {
+  private static fromYearAndQuarter(year: number, quarter: number): QuarterInfoImpl {
     if (quarter < 0 || 4 < quarter) {
       console.log("Bad quarter " + quarter);
       return QuarterInfoImpl.current();
@@ -117,77 +132,8 @@ class QuarterInfoImpl implements QuarterInfo {
 
 export class Quarters {
 
-  private callbacks: ((quarter: QuarterInfo) => void)[] = [];
-
-  private locale: Locale | null = null;
-  private quarter: QuarterInfoImpl | null = null;
-
-  initQuarters(): void {
-    if (document.getElementById('quarterTitle') == null) {
-      return;
-    }
-    this.loadQuarter();
-  }
-
-  registerChangeCallback(callback: ((quarter: QuarterInfo) => void)): void {
-    this.callbacks.push(callback);
-    if (this.quarter !== null) {
-      callback(this.quarter);
-    }
-  }
-
-  localeChanged(locale: Locale): void {
-    this.locale = locale;
-    this.updateQuarter();
-  }
-
-  prevQuarter(): void {
-    this.quarter = this.quarter!.previous();
-    window.location.hash = this.quarter.toString();
-    this.updateQuarter();
-  }
-
-  nextQuarter(): void {
-    this.quarter = this.quarter!.next();
-    window.location.hash = this.quarter.toString();
-    this.updateQuarter();
-  }
-
-  private refreshQuarter(): void {
-    if (window.location.hash) {
-      this.quarter = QuarterInfoImpl.fromString(window.location.hash.substring(1));
-      window.location.hash = this.quarter.toString();
-    } else {
-      this.quarter = QuarterInfoImpl.current();
-    }
-    this.updateQuarter();
-  }
-
-  private updateQuarter(): void {
-    if (this.locale == null || this.quarter == null) {
-      return;
-    }
-    const quarterTitle: HTMLElement | null = document.getElementById("quarterTitle");
-    if (quarterTitle === null) {
-      throw new Error("Missing element quarterTitle");
-    }
-    quarterTitle.innerText = this.locale.getMessage("quarterTitle", this.quarter.year, this.quarter.quarter);
-
-    this.callbacks.forEach((callback: ((quarter: QuarterInfo) => void)) => {
-      callback(this.quarter!);
-    });
-  }
-
-  private loadQuarter(): void {
-    this.refreshQuarter();
-    const prevQuarterLink: HTMLElement | null = document.getElementById("prevQuarterLink");
-    const nextQuarterLink: HTMLElement | null = document.getElementById("nextQuarterLink");
-    if (prevQuarterLink === null || nextQuarterLink === null) {
-      throw new Error("Missing elements prevQuarterLink and/or nextQuarterLink");
-    }
-    prevQuarterLink.addEventListener("click", (event: Event) => { this.prevQuarter() });
-    nextQuarterLink.addEventListener("click", (event: Event) => { this.nextQuarter() });
-    window.addEventListener("hashchange", () => { this.refreshQuarter() });
+  public default(): QuarterInfo {
+    return QuarterInfoImpl.current();
   }
 
 }

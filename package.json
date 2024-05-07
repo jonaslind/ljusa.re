@@ -8,6 +8,7 @@
     "test": "npx jest",
     "format": "npx organize-imports-cli tsconfig.json && npx typescript-formatter -r",
     "prepack": "rm -rf dist && npx webpack && cp static/* dist/.",
+    "prepack-dev": "rm -rf dist && npx webpack --mode development && cp static/* dist/.",
     "update-s3-bucket": "aws s3 sync dist/. $LJUSARE_BUCKET_URI --cache-control max-age=604800",
     "deploy": "npm run test && npm run prepack && npm run update-s3-bucket"
   },
@@ -15,6 +16,9 @@
   "devDependencies": {
     "@types/jest": "^29.5.11",
     "@types/luxon": "^3.4.1",
+    "@types/react": "^18.3.1",
+    "@types/react-dom": "^18.3.0",
+    "html-webpack-plugin": "^5.6.0",
     "jest": "^29.7.0",
     "organize-imports-cli": "^0.10.0",
     "ts-jest": "^29.1.1",
@@ -27,6 +31,11 @@
   },
   "dependencies": {
     "chart.js": "^4.4.1",
-    "luxon": "^3.4.4"
+    "luxon": "^3.4.4",
+    "react": "^18.3.1",
+    "react-chartjs-2": "^5.2.0",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.23.1",
+    "use-local-storage-state": "^19.2.0"
   }
 }
