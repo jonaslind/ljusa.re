@@ -38,29 +38,45 @@ export function secondsOfDayToStringWithSeconds(secondsOfDay: bigint): string {
 }
 
 export class SunTime {
+  polarNight: boolean;
   // seconds since 00:00
-  sunrise: bigint;
+  private _sunrise: bigint;
   // seconds since 00:00
-  sunset: bigint;
+  private _sunset: bigint;
 
-  private constructor(sunrise: bigint, sunset: bigint) {
-    this.sunrise = sunrise;
-    this.sunset = sunset;
+  private constructor(sunrise: bigint, sunset: bigint, polarNight: boolean) {
+    this.polarNight = polarNight;
+    this._sunrise = sunrise;
+    this._sunset = sunset;
   }
 
-  sunriseAsString() {
-    return secondsOfDayToStringWithSeconds(this.sunrise);
+  public get sunrise(): bigint {
+    if (this.polarNight) {
+      throw new Error("No sunrise because this is a polar night");
+    }
+    return this._sunrise;
   }
 
-  sunsetAsString() {
-    return secondsOfDayToStringWithSeconds(this.sunset);
+  public get sunset(): bigint {
+    if (this.polarNight) {
+      throw new Error("No sunset because this is a polar night");
+    }
+    return this._sunset;
   }
 
-  static polarNight(): SunTime {
-    return new SunTime(null, null);
+  public sunriseAsString(): string {
+    return secondsOfDayToStringWithSeconds(this._sunrise);
   }
 
-  static fromTimestamps(sunriseTimestamp: number, sunsetTimestamp: number, zone: Zone): SunTime {
+  public sunsetAsString(): string {
+    return secondsOfDayToStringWithSeconds(this._sunset);
+  }
+
+  private static polarNight(): SunTime {
+    return new SunTime(BigInt(0), BigInt(0), true);
+  }
+
+  private static fromTimestamps(sunriseTimestamp: number, sunsetTimestamp: number, zone: Zone): SunTime {
     var sunsetAfterMidnight = false;
     if (
       DateTime.fromSeconds(sunriseTimestamp).setZone(zone).startOf("day") <
@@ -69,9 +85,9 @@ export class SunTime {
       sunsetAfterMidnight = true;
     }
     if (!sunsetAfterMidnight) {
-      return new SunTime(secondsOfDay(sunriseTimestamp, zone), secondsOfDay(sunsetTimestamp, zone));
+      return new SunTime(secondsOfDay(sunriseTimestamp, zone), secondsOfDay(sunsetTimestamp, zone), false);
     } else {
-      return new SunTime(secondsOfDay(sunriseTimestamp, zone), secondsOfDay(sunsetTimestamp, zone) + BigInt(24 * 60 * 60));
+      return new SunTime(secondsOfDay(sunriseTimestamp, zone), secondsOfDay(sunsetTimestamp, zone) + BigInt(24 * 60 * 60), false);
     }
   }
 

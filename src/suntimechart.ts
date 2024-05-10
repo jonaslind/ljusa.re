@@ -15,15 +15,15 @@ export class SuntimeChart {
 
   private static SECONDS_IN_HALF_HOUR: number = 30 * 60;
 
-  private colorInfo: ColorInfo;
+  private colorInfo: ColorInfo | null = null;
 
-  private locale: Locale;
+  private locale: Locale | null = null;
 
-  private chartOptions: ChartOptions;
+  private chartOptions: ChartOptions | null = null;
 
-  private sunTimeData: SunTimeData;
+  private sunTimeData: SunTimeData | null = null;
 
-  private chart: Chart;
+  private chart: Chart | null = null;
 
   initSuntimeChart() {
     // Do nothing at the moment
@@ -49,30 +49,33 @@ export class SuntimeChart {
     this.updateSuntimes();
   }
 
-  private xAxisLabel(value: number): string {
-    if (value == this.sunTimeData.indexOfToday) {
-      return this.locale.getMessage("chartToday");
+  private xAxisLabel(value: string | number): string {
+    if (typeof value === "string") {
+      throw new Error("Unexpected x axis value " + value);
+    }
+    if (value == this.sunTimeData!.indexOfToday) {
+      return this.locale!.getMessage("chartToday");
     }
     if (value % 7 != 0) {
       return "";
     }
-    const date: DateTime = this.sunTimeData.dates[0].plus({ days: value });
+    const date: DateTime = this.sunTimeData!.dates[0].plus({ days: value });
     return date.toLocaleString({
       month: "short",
       day: "numeric"
-    }, { locale: this.locale.language });
+    }, { locale: this.locale!.language });
   }
 
   private xAxisLineColor(context: ScriptableScaleContext): Color {
-    if (context.tick.value == this.sunTimeData.indexOfToday) {
+    if (context.tick.value == this.sunTimeData!.indexOfToday) {
       // Looks better when the Today line doesn't stand out as much
-      return this.colorInfo.lineColorLight;
+      return this.colorInfo!.lineColorLight;
     }
-    return this.colorInfo.lineColorLight;
+    return this.colorInfo!.lineColorLight;
   }
 
   private xAxisLineWidth(context: ScriptableScaleContext): number {
-    if (context.tick.value == this.sunTimeData.indexOfToday) {
+    if (context.tick.value == this.sunTimeData!.indexOfToday) {
       return 1;
     }
     if (context.tick.value % 7 != 0) {
@@ -81,7 +84,10 @@ export class SuntimeChart {
     return 1;
   }
 
-  private yAxisLabel(value: number): string {
+  private yAxisLabel(value: string | number): string {
+    if (typeof value === "string") {
+      throw new Error("Unexpected y axis value " + value);
+    }
     if (value % (SuntimeChart.SECONDS_IN_HOUR) != 0) {
       return "";
     }
@@ -90,17 +96,17 @@ export class SuntimeChart {
 
   private yAxisLineColor(context: ScriptableScaleContext): Color {
     if (context.tick.value % (SuntimeChart.SECONDS_IN_HOUR) != 0) {
-      return this.colorInfo.lineColorLight;
+      return this.colorInfo!.lineColorLight;
     }
-    return this.colorInfo.lineColorHeavy;
+    return this.colorInfo!.lineColorHeavy;
   }
 
   private tooltipTitle(context: TooltipItem<keyof ChartTypeRegistry>[]): string {
-    const date: DateTime = this.sunTimeData.dates[0].plus({ days: context[0].dataIndex });
+    const date: DateTime = this.sunTimeData!.dates[0].plus({ days: context[0].dataIndex });
     return date.toLocaleString({
       month: "short",
       day: "numeric"
-    }, { locale: this.locale.language });
+    }, { locale: this.locale!.language });
   }
 
   private tooltipLabel(context: TooltipItem<keyof ChartTypeRegistry>): string {
@@ -109,13 +115,13 @@ export class SuntimeChart {
 
   private labelColor(context: TooltipItem<keyof ChartTypeRegistry>): TooltipLabelStyle {
     return {
-      borderColor: this.colorInfo.highlightBackgroundColor,
-      backgroundColor: this.colorInfo.accentColors[Math.floor(context.datasetIndex / 2) % 8]
+      borderColor: this.colorInfo!.highlightBackgroundColor,
+      backgroundColor: this.colorInfo!.accentColors[Math.floor(context.datasetIndex / 2) % 8]
     };
   }
 
-  private updateSuntimes() {
-    if (this.colorInfo == null || this.sunTimeData == null || this.chartOptions == null || this.sunTimeData.data.length == 0) {
+  private updateSuntimes(): void {
+    if (this.colorInfo === null || this.locale === null || this.chartOptions === null || this.sunTimeData === null || this.sunTimeData.data.length == 0) {
       if (this.chart != null) {
         this.chart.destroy();
       }
@@ -130,36 +136,33 @@ export class SuntimeChart {
       const sunTimeDataSeries: SunTimeDataSeries = this.sunTimeData.data[i];
       const location: Location = sunTimeDataSeries.location;
       const suntimes: SunTime[] = sunTimeDataSeries.sunTimes;
-      const sunriseData: number[] = [];
-      const sunsetData: number[] = [];
+      const sunriseData: (number | null)[] = [];
+      const sunsetData: (number | null)[] = [];
 
       for (var j: number = 0; j < this.sunTimeData.dates.length; j++) {
         const suntime: SunTime = suntimes[j];
-        if (suntime.sunrise != null) {
-          const value: number = Number(suntime.sunrise);
-          sunriseData.push(value);
-          minValue = Math.min(minValue, value);
+        if (!suntime.polarNight) {
+          const sunriseValue: number = Number(suntime.sunrise);
+          const sunsetValue: number = Number(suntime.sunset);
+          sunriseData.push(sunriseValue);
+          sunsetData.push(sunsetValue);
+          minValue = Math.min(minValue, sunriseValue);
+          maxValue = Math.max(maxValue, sunsetValue);
         } else {
           sunriseData.push(null);
-        }
-        if (suntime.sunset != null) {
-          const value: number = Number(suntime.sunset);
-          sunsetData.push(value);
-          maxValue = Math.max(maxValue, value);
-        } else {
           sunsetData.push(null);
         }
       }
 
       datasets.push({
-        label: this.locale.getMessage("chartSunriseLabel", location.names.get(this.locale.language)),
+        label: this.locale.getMessage("chartSunriseLabel", location.getName(this.locale.language)),
         data: sunriseData,
         borderColor: this.colorInfo.accentColors[i % 8],
         backgroundColor: this.colorInfo.accentColors[i % 8],
         pointStyle: false
       });
       datasets.push({
-        label: this.locale.getMessage("chartSunsetLabel", location.names.get(this.locale.language)),
+        label: this.locale.getMessage("chartSunsetLabel", location.getName(this.locale.language)),
         data: sunsetData,
         borderColor: this.colorInfo.accentColors[i % 8],
         backgroundColor: this.colorInfo.accentColors[i % 8],
@@ -201,7 +204,7 @@ export class SuntimeChart {
             suggestedMin: minValue,
             suggestedMax: maxValue,
             ticks: {
-              callback: (value: number) => { return this.yAxisLabel(value); },
+              callback: (value: string | number) => { return this.yAxisLabel(value); },
               stepSize: SuntimeChart.SECONDS_IN_HALF_HOUR
             },
             grid: {
@@ -211,7 +214,7 @@ export class SuntimeChart {
           x: {
             type: "linear",
             ticks: {
-              callback: (value: number) => { return this.xAxisLabel(value); },
+              callback: (value: string | number) => { return this.xAxisLabel(value); },
               stepSize: 1,
               major: {
                 enabled: true

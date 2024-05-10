@@ -12,7 +12,7 @@ export class Styles {
 
   private callbacks: ((colorInfo: ColorInfo) => void)[] = [];
 
-  private colorInfo: ColorInfo = null;
+  private colorInfo: ColorInfo | null = null;
 
   initStyles(): void {
     this.activateStyle();
@@ -20,24 +20,26 @@ export class Styles {
 
   registerChangeCallback(callback: ((colorInfo: ColorInfo) => void)): void {
     this.callbacks.push(callback);
-    callback(this.colorInfo);
+    if (this.colorInfo !== null) {
+      callback(this.colorInfo);
+    }
   }
 
-  private colorsChanged(colorInfo: ColorInfo) {
+  private colorsChanged(colorInfo: ColorInfo): void {
     this.colorInfo = colorInfo;
     this.callbacks.forEach((callback: ((colorInfo: ColorInfo) => void)) => {
       callback(colorInfo);
     });
   }
 
-  private updateColors() {
-    var normalForegroundColor: string = null;
-    var normalBackgroundColor: string = null;
-    var highlightForegroundColor: string = null;
-    var highlightBackgroundColor: string = null;
-    var lineColorLight: string = null;
-    var lineColorHeavy: string = null;
-    var accentColors: string[] = null;
+  private updateColors(): void {
+    var normalForegroundColor: string;
+    var normalBackgroundColor: string;
+    var highlightForegroundColor: string;
+    var highlightBackgroundColor: string;
+    var lineColorLight: string;
+    var lineColorHeavy: string;
+    var accentColors: string[];
     [normalForegroundColor, normalBackgroundColor] = Styles.getColorInfo("normalColors");
     [highlightForegroundColor, highlightBackgroundColor] = Styles.getColorInfo("highlightColors");
     [lineColorHeavy, lineColorLight] = Styles.getColorInfo("lineColors");
@@ -56,24 +58,24 @@ export class Styles {
     });
   }
 
-  private activateAndDeactivateStyle(styleToActivate: CSSStyleSheet, styleToDeactivate: CSSStyleSheet) {
+  private activateAndDeactivateStyle(styleToActivate: CSSStyleSheet, styleToDeactivate: CSSStyleSheet): void {
     styleToActivate.disabled = false;
     styleToDeactivate.disabled = true;
     this.updateColors();
   }
 
-  private activateLightStyle() {
+  private activateLightStyle(): void {
     localStorage.setItem("lightOrDarkStyle", "light");
     this.activateAndDeactivateStyle(Styles.getStyle("light"), Styles.getStyle("dark"));
 
   }
 
-  private activateDarkStyle() {
+  private activateDarkStyle(): void {
     localStorage.setItem("lightOrDarkStyle", "dark");
     this.activateAndDeactivateStyle(Styles.getStyle("dark"), Styles.getStyle("light"));
   }
 
-  private toggleStyle() {
+  private toggleStyle(): void {
     if (Styles.getStyle("dark").disabled) {
       this.activateDarkStyle();
     } else {
@@ -81,7 +83,7 @@ export class Styles {
     }
   }
 
-  private activateStyle() {
+  private activateStyle(): void {
     const preferredStyle = localStorage.getItem("lightOrDarkStyle");
     if (preferredStyle != null) {
       if (preferredStyle == "light") {
@@ -92,7 +94,10 @@ export class Styles {
     } else {
       this.activateLightStyle();
     }
-    const lightOrDarkStyleToggle: HTMLElement = document.getElementById("lightOrDarkStyleToggle");
+    const lightOrDarkStyleToggle: HTMLElement | null = document.getElementById("lightOrDarkStyleToggle");
+    if (lightOrDarkStyleToggle === null) {
+      throw new Error("Missing element lightOrDarkStyleToggle");
+    }
     lightOrDarkStyleToggle.addEventListener("click", (event: Event) => { this.toggleStyle() });
   }
 
@@ -108,14 +113,18 @@ export class Styles {
     return [foreground, background];
   }
 
-  private static getStyle(name: string): CSSStyleSheet | null {
+  private static getStyle(name: string): CSSStyleSheet {
     for (var i: number = 0; i < document.styleSheets.length; i++) {
       const styleSheet: CSSStyleSheet = <CSSStyleSheet> document.styleSheets[i];
-      if (styleSheet.href.endsWith(name + ".css")) {
+      const href: string | null = styleSheet.href;
+      if (href === null) {
+        throw new Error("StyleSheet " + styleSheet + " doesn't have any href");
+      }
+      if (href.endsWith(name + ".css")) {
         return styleSheet;
       }
     }
-    return null;
+    throw new Error("Missing stylesheet " + name);
   }
 
 }

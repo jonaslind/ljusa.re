@@ -22,38 +22,44 @@ export class SunTimes {
   private indexOfToday: number = -1;
   private daysSinceFirstDate: number[] = [];
   private dataCache: Map<String, SunTime[]> = new Map<String, SunTime[]>();
-  private suntimeData: SunTimeData;
-  private quarter: QuarterInfo;
-  private locations: Location[];
+  private suntimeData: SunTimeData | null = null;
+  private quarter: QuarterInfo | null = null;
+  private locations: Location[] | null = null;
 
-  initSunTimes() {
+  initSunTimes(): void {
     this.loadDates();
     this.createSuntimeData();
   }
 
   registerChangeCallback(callback: ((sunTimeData: SunTimeData) => void)): void {
     this.callbacks.push(callback);
-    callback(this.suntimeData);
+    if (this.suntimeData !== null) {
+      callback(this.suntimeData);
+    }
   }
 
-  locationsChanged(locations: Location[]) {
+  locationsChanged(locations: Location[]): void {
     this.locations = locations;
     this.createSuntimeData();
     this.callbacks.forEach((callback: ((sunTimeData: SunTimeData) => void)) => {
-      callback(this.suntimeData);
+      if (this.suntimeData !== null) {
+        callback(this.suntimeData);
+      }
     });
   }
 
-  quarterChanged(quarter: QuarterInfo) {
+  quarterChanged(quarter: QuarterInfo): void {
     this.quarter = quarter;
     this.loadDates();
     this.createSuntimeData();
     this.callbacks.forEach((callback: ((sunTimeData: SunTimeData) => void)) => {
-      callback(this.suntimeData);
+      if (this.suntimeData !== null) {
+        callback(this.suntimeData);
+      }
     });
   }
 
-  private loadDates() {
+  private loadDates(): void {
     if (this.quarter == null) {
       return;
     }
@@ -74,7 +80,7 @@ export class SunTimes {
     }
   }
 
-  private createSuntimeData() {
+  private createSuntimeData(): void {
     if (this.dates.length == 0 || this.locations == null) {
       return;
     }
@@ -104,7 +110,7 @@ export class SunTimes {
       });
       this.dataCache.set(cacheId, suntimes);
     }
-    return this.dataCache.get(cacheId);
+    return this.dataCache.get(cacheId)!;
   }
 
 

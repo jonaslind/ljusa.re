@@ -154,8 +154,9 @@ public static class LocationsTypescriptSourceFileUpdater {
                   .collect(Collectors.joining(", "));
           names = names + "])";
           locationsTSNew
-              .add("  [\"" + city.ascii_id() + "\", new Location(" + city.latitude() + ", " + city.longitude() + ", "
-                  + city.elevation() + ", " + names + ", new IANAZone(\"" + city.timezone + "\"))],");
+              .add("  [\"" + city.ascii_id() + "\", new Location(\"" + city.ascii_id() + "\", " + city.latitude() + ", "
+                  + city.longitude() + ", " + city.elevation() + ", " + names + ", new IANAZone(\"" + city.timezone
+                  + "\"))],");
         });
       }
       if (originalLine.contains("// _END_LOCATIONS_")) {

@@ -19,7 +19,7 @@ window.onload = function() {
   const styles: Styles = new Styles();
   styles.initStyles();
 
-  const licenses: Licenses = new Licenses()
+  const licenses: Licenses = new Licenses();
   licenses.initLicenses();
 
   const locationSelectors: LocationSelectors = new LocationSelectors();

@@ -1,12 +1,15 @@
 {
   "compilerOptions": {
     "module": "es6",
+    "target": "es6",
     "moduleResolution": "bundler",
     "downlevelIteration": true,
     "noImplicitAny": true,
     "removeComments": true,
     "esModuleInterop": false,
-    "sourceMap": true
+    "sourceMap": true,
+    "forceConsistentCasingInFileNames": true,
+    "strict": true
   },
   "include": [
     "src/**/*"

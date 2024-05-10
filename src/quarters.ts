@@ -119,10 +119,10 @@ export class Quarters {
 
   private callbacks: ((quarter: QuarterInfo) => void)[] = [];
 
-  private locale: Locale;
-  private quarter: QuarterInfoImpl;
+  private locale: Locale | null = null;
+  private quarter: QuarterInfoImpl | null = null;
 
-  initQuarters() {
+  initQuarters(): void {
     if (document.getElementById('quarterTitle') == null) {
       return;
     }
@@ -131,27 +131,29 @@ export class Quarters {
 
   registerChangeCallback(callback: ((quarter: QuarterInfo) => void)): void {
     this.callbacks.push(callback);
-    callback(this.quarter);
+    if (this.quarter !== null) {
+      callback(this.quarter);
+    }
   }
 
-  localeChanged(locale: Locale) {
+  localeChanged(locale: Locale): void {
     this.locale = locale;
     this.updateQuarter();
   }
 
-  prevQuarter() {
-    this.quarter = this.quarter.previous();
+  prevQuarter(): void {
+    this.quarter = this.quarter!.previous();
     window.location.hash = this.quarter.toString();
     this.updateQuarter();
   }
 
-  nextQuarter() {
-    this.quarter = this.quarter.next();
+  nextQuarter(): void {
+    this.quarter = this.quarter!.next();
     window.location.hash = this.quarter.toString();
     this.updateQuarter();
   }
 
-  refreshQuarter() {
+  private refreshQuarter(): void {
     if (window.location.hash) {
       this.quarter = QuarterInfoImpl.fromString(window.location.hash.substring(1));
       window.location.hash = this.quarter.toString();
@@ -161,23 +163,29 @@ export class Quarters {
     this.updateQuarter();
   }
 
-  private updateQuarter() {
+  private updateQuarter(): void {
     if (this.locale == null || this.quarter == null) {
       return;
     }
-    const quarterTitle: HTMLElement = document.getElementById("quarterTitle");
+    const quarterTitle: HTMLElement | null = document.getElementById("quarterTitle");
+    if (quarterTitle === null) {
+      throw new Error("Missing element quarterTitle");
+    }
     quarterTitle.innerText = this.locale.getMessage("quarterTitle", this.quarter.year, this.quarter.quarter);
 
     this.callbacks.forEach((callback: ((quarter: QuarterInfo) => void)) => {
-      callback(this.quarter);
+      callback(this.quarter!);
     });
   }
 
-  private loadQuarter() {
+  private loadQuarter(): void {
     this.refreshQuarter();
-    const prevQuarterLink: HTMLElement = document.getElementById("prevQuarterLink");
+    const prevQuarterLink: HTMLElement | null = document.getElementById("prevQuarterLink");
+    const nextQuarterLink: HTMLElement | null = document.getElementById("nextQuarterLink");
+    if (prevQuarterLink === null || nextQuarterLink === null) {
+      throw new Error("Missing elements prevQuarterLink and/or nextQuarterLink");
+    }
     prevQuarterLink.addEventListener("click", (event: Event) => { this.prevQuarter() });
-    const nextQuarterLink: HTMLElement = document.getElementById("nextQuarterLink");
     nextQuarterLink.addEventListener("click", (event: Event) => { this.nextQuarter() });
     window.addEventListener("hashchange", () => { this.refreshQuarter() });
   }

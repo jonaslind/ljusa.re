@@ -31,6 +31,10 @@ export class LocaleImpl implements Locale {
   }
 
   public getMessage(key: string, ...args: string[]): string {
-    return this._messages.get(key)(...args);
+    const message: ((...args2: string[]) => string) | undefined = this._messages.get(key);
+    if (message === undefined) {
+      throw new Error("Missing message " + key + " in language " + this.language);
+    }
+    return message(...args);
   }
 }

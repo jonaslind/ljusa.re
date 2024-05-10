@@ -5,13 +5,14 @@ export interface ChartOptions {
 export class ChartControls {
 
   private callbacks: ((chartOptions: ChartOptions) => void)[] = [];
-  private currentOptions: ChartOptions = null;
+  private currentOptions: ChartOptions = ChartControls.loadOptions();
 
   initOptions(): void {
-    if (document.getElementById('yAxisDirectionToggle') == null) {
+    const yAxisDirectionToggle: HTMLElement | null = document.getElementById("yAxisDirectionToggle");
+    if (yAxisDirectionToggle == null) {
       return;
     }
-    this.activateFirstOptions();
+    yAxisDirectionToggle.addEventListener("click", (event: Event) => { this.toggleYAxisDirection() });
   }
 
   registerChangeCallback(callback: ((chartOptions: ChartOptions) => void)): void {
@@ -19,21 +20,18 @@ export class ChartControls {
     callback(this.currentOptions);
   }
 
-  private optionsChanged() {
+  private optionsChanged(): void {
     this.callbacks.forEach((callback: ((chartOptions: ChartOptions) => void)) => {
       callback(this.currentOptions);
     });
   }
 
-  private activateFirstOptions(): void {
+  private static loadOptions(): ChartOptions {
     const preferredFlipYAxis = localStorage.getItem("preferredFlipYAxis");
     if (preferredFlipYAxis != null && preferredFlipYAxis == "true") {
-      this.currentOptions = { flipYAxis: true };
-    } else {
-      this.currentOptions = { flipYAxis: false };
+      return { flipYAxis: true };
     }
-    const yAxisDirectionToggle: HTMLElement = document.getElementById("yAxisDirectionToggle");
-    yAxisDirectionToggle.addEventListener("click", (event: Event) => { this.toggleYAxisDirection() });
+    return { flipYAxis: false };
   }
 
   private toggleYAxisDirection(): void {

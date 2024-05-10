@@ -8,9 +8,9 @@ export class LocationSelectors {
   private selectedLocationIds: string[] = [];
   private selectedLocations: Location[] = [];
 
-  private locale: Locale;
+  private locale: Locale | null = null;
 
-  localeChanged(locale: Locale) {
+  localeChanged(locale: Locale): void {
     if (document.getElementById('locationSelector') == null) {
       return;
     }
@@ -18,7 +18,7 @@ export class LocationSelectors {
     this.updateLocationSelector();
   }
 
-  initLocationSelectors() {
+  initLocationSelectors(): void {
     if (document.getElementById('locationSelector') == null) {
       return;
     }
@@ -30,18 +30,18 @@ export class LocationSelectors {
     callback(this.selectedLocations);
   }
 
-  private locationsChanged() {
+  private locationsChanged(): void {
     this.selectedLocations = [];
     this.selectedLocationIds.forEach((selectedLocationId: string) => {
-      this.selectedLocations.push(locations.get(selectedLocationId));
+      this.selectedLocations.push(locations.get(selectedLocationId)!);
     })
     this.callbacks.forEach((callback: ((locations: Location[]) => void)) => {
       callback(this.selectedLocations);
     });
   }
 
-  private updateLocationSelector() {
-    if (this.locale == null) {
+  private updateLocationSelector(): void {
+    if (this.locale === null) {
       return;
     }
     const chosenLocationsContainer: HTMLDivElement = <HTMLDivElement> document.getElementById("chosenLocations");
@@ -53,21 +53,22 @@ export class LocationSelectors {
         return;
       }
       const option: HTMLOptionElement = <HTMLOptionElement> document.createElement("option");
-      option.value = value.names.get(this.locale.language);
+      option.value = value.getName(this.locale!.language);
       options.push(option);
     });
     locationDataList.replaceChildren(...options);
 
     const chosenLocations: HTMLSpanElement[] = [];
     for (var i: number = 0; i < this.selectedLocationIds.length; i++) {
-      const selectedLocation: string = this.selectedLocationIds[i];
+      const selectedLocation: Location = locations.get(this.selectedLocationIds[i])!;
 
       const chosenLocation: HTMLSpanElement = <HTMLSpanElement> document.createElement("span");
       chosenLocation.className = "chosenLocation accentColor" + (i % 8);
-      chosenLocation.appendChild(document.createTextNode(locations.get(selectedLocation).names.get(this.locale.language)));
+
+      chosenLocation.appendChild(document.createTextNode(selectedLocation.getName(this.locale!.language)));
       const removeLocationIcon: HTMLElement = document.createElement("i");
       removeLocationIcon.className = "removeLocation";
-      removeLocationIcon.dataset.value = selectedLocation;
+      removeLocationIcon.dataset.value = selectedLocation.id;
       removeLocationIcon.addEventListener("click", (event: Event) => {
         this.removeLocationClicked(<HTMLElement> event.target);
       });
@@ -80,9 +81,9 @@ export class LocationSelectors {
   }
 
 
-  private loadSelectedLocations() {
-    var selectedLocationsString: string = localStorage.getItem("selectedLocationsString");
-    if (selectedLocationsString != null) {
+  private loadSelectedLocations(): void {
+    var selectedLocationsString: string | null = localStorage.getItem("selectedLocationsString");
+    if (selectedLocationsString !== null) {
       const selectedLocationsArray: string[] = JSON.parse(selectedLocationsString);
       selectedLocationsArray.forEach((selectedLocation) => {
         if (locations.has(selectedLocation)) {
@@ -99,9 +100,9 @@ export class LocationSelectors {
     this.updateLocationSelector();
   }
 
-  private locationSelectorChanged(locationSelector: HTMLInputElement) {
+  private locationSelectorChanged(locationSelector: HTMLInputElement): void {
     const currentValue: string = locationSelector.value;
-    const currentLocationId: string = getLocationIdForName(currentValue);
+    const currentLocationId: string | null = getLocationIdForName(currentValue);
     if (currentLocationId == null) {
       return;
     }
@@ -111,8 +112,12 @@ export class LocationSelectors {
     this.updateLocationSelector();
   }
 
-  private removeLocationClicked(removeLocationIcon: HTMLElement) {
-    this.selectedLocationIds.splice(this.selectedLocationIds.indexOf(removeLocationIcon.dataset.value), 1);
+  private removeLocationClicked(removeLocationIcon: HTMLElement): void {
+    const locationId: string | undefined = removeLocationIcon.dataset.value;
+    if (locationId === undefined) {
+      throw new Error("Missing location id");
+    }
+    this.selectedLocationIds.splice(this.selectedLocationIds.indexOf(locationId), 1);
     localStorage.setItem("selectedLocationsString", JSON.stringify(this.selectedLocationIds));
     this.updateLocationSelector();
   }

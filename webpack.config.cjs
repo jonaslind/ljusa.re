@@ -5,6 +5,7 @@ const fs = require('fs')
 
 module.exports = {
   entry: './src/main.ts',
+  mode: 'production',
   module: {
     rules: [
       {
