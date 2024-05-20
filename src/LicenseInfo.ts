@@ -1,20 +1,16 @@
 export class LicenseInfo {
   name: string;
-  version: string;
   author: string | undefined;
   repository: string;
-  source: string;
   license: string;
   licenseText: string;
   private _usages: Map<string, string>;
   private _types: Map<string, string>;
 
-  constructor(name: string, version: string, author: string, repository: string, source: string, license: string, licenseText: string, usages: Map<string, string>, types: Map<string, string>) {
+  constructor(name: string, author: string, repository: string, license: string, licenseText: string, usages: Map<string, string>, types: Map<string, string>) {
     this.name = name;
-    this.version = version;
     this.author = author;
     this.repository = repository;
-    this.source = source;
     this.license = license;
     this.licenseText = licenseText;
     this._usages = usages;
@@ -44,10 +40,8 @@ export class Licenses {
     const licenseInfos: any[] = await response.json();
     return licenseInfos.map((licenseInfo) => new LicenseInfo(
       licenseInfo.name,
-      licenseInfo.version,
       licenseInfo.author,
       licenseInfo.location,
-      licenseInfo.source,
       licenseInfo.license,
       licenseInfo.licenseText,
       new Map(Object.entries(licenseInfo.usage)),

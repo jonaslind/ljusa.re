@@ -51,9 +51,13 @@ module.exports = {
             const packageType = dependencyUsages.hasOwnProperty(pack.name) ? dependencyUsages[pack.name].type : dependencyUsages["default"].type;
             var location = (pack.repository.startsWith("git+") ? pack.repository.substring(4) : pack.repository);
             if(!location.startsWith("https://")) {
-				location = pack.source;
-			}
-            return {...pack, location: location, usage: usage, type: packageType};
+              location = pack.source;
+            }
+            if(pack.author !== undefined) {
+              return {name: pack.name, location: location, author: pack.author, license: pack.license, licenseText: pack.licenseText, usage: usage, type: packageType};
+            } else {
+              return {name: pack.name, location: location, license: pack.license, licenseText: pack.licenseText, usage: usage, type: packageType};
+            }
           });
           return JSON.stringify(packagesWithUsage, null, 2);
         },
