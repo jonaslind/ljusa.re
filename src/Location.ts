@@ -1820,5 +1820,3 @@ const locations: Map<string, Location> = new Map<string, Location>([
   ["zurich_switzerland", new Location("zurich_switzerland", 47.36667, 8.55, 429, new Map([["en-gb", "Zurich, Switzerland"], ["sv", "Zürich, Schweiz"]]), new IANAZone("Europe/Zurich"))],
   // _END_LOCATIONS_
 ]);
-
-

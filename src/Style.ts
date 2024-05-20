@@ -14,7 +14,6 @@ export interface Style {
   readonly colorInfo: ColorInfo;
 }
 
-
 function instanceOfStyle(object: any): object is Style {
   return object.discriminator === 'Style-Interface';
 }

@@ -9,11 +9,9 @@ function isChartOptions(obj: unknown): obj is ChartOptions {
 
 export const defaultChartOptions: ChartOptions = { flipYAxis: false };
 
-
 export class ChartOptionsSerializer {
   stringify: (value: unknown) => string = (value: unknown) => this.serializeUnknown(value);
   parse: (value: string) => ChartOptions = (value: string) => this.deserialize(value);
-
 
   private serializeUnknown(value: unknown): string {
     if (isChartOptions(value))
