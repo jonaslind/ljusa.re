@@ -31,7 +31,7 @@ export const swedish: Locale = new LocaleImpl("se", "sv", new Map([
       "Denna webbsida använder " + usage + " " + type +
       " <a href=\"" + (repository.startsWith("git+") ? repository.substring(4) : repository) +
       "\" class=\"packageLink\">" +
-      name + "</a> " +
+      name + "</a>" +
       (author != undefined ? " av " + author : "") +
       ", licensierad under licensen " + license + ":"
   ]
