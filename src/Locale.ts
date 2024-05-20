@@ -1,9 +1,12 @@
+import { encode } from "he";
+
 export interface Locale {
   readonly discriminator: 'Locale-Interface';
   readonly name: string;
   readonly language: string;
   readonly keys: string[];
-  getMessage(key: string, ...args: string[]): string;
+  getMessage(key: string, ...args: (string | undefined)[]): string;
+  getMessageForHtml(key: string, ...args: (string | undefined)[]): string;
 }
 
 function instanceOfLocale(object: any): object is Locale {
@@ -43,10 +46,10 @@ export class LocaleImpl implements Locale {
   readonly discriminator: 'Locale-Interface' = 'Locale-Interface';
   private _name: string;
   private _language: string;
-  private _messages: Map<string, (...args: string[]) => string>;
+  private _messages: Map<string, (...args: (string | undefined)[]) => string>;
   private _keys: string[];
 
-  constructor(name: string, language: string, messages: Map<string, (...args: string[]) => string>) {
+  constructor(name: string, language: string, messages: Map<string, (...args: (string | undefined)[]) => string>) {
     this._name = name;
     this._language = language;
     this._messages = messages;
@@ -65,11 +68,21 @@ export class LocaleImpl implements Locale {
     return this._keys;
   }
 
-  public getMessage(key: string, ...args: string[]): string {
-    const message: ((...args2: string[]) => string) | undefined = this._messages.get(key);
+  public getMessage(key: string, ...args: (string | undefined)[]): string {
+    const message: ((...args2: (string | undefined)[]) => string) | undefined = this._messages.get(key);
     if (message === undefined) {
       throw new Error("Missing message " + key + " in language " + this.language);
     }
     return message(...args);
+  }
+
+  public getMessageForHtml(key: string, ...args: (string | undefined)[]): string {
+    const encodedArgs: (string | undefined)[] = args.map((rawArg) => {
+      if (rawArg === undefined) {
+        return undefined;
+      }
+      return encode(rawArg);
+    });
+    return this.getMessage(key, ...encodedArgs);
   }
 }

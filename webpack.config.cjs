@@ -49,7 +49,11 @@ module.exports = {
           const packagesWithUsage = packages.map((pack) => {
             const usage = dependencyUsages.hasOwnProperty(pack.name) ? dependencyUsages[pack.name].usage : dependencyUsages["default"].usage;
             const packageType = dependencyUsages.hasOwnProperty(pack.name) ? dependencyUsages[pack.name].type : dependencyUsages["default"].type;
-            return {...pack, usage: usage, type: packageType};
+            var location = (pack.repository.startsWith("git+") ? pack.repository.substring(4) : pack.repository);
+            if(!location.startsWith("https://")) {
+				location = pack.source;
+			}
+            return {...pack, location: location, usage: usage, type: packageType};
           });
           return JSON.stringify(packagesWithUsage, null, 2);
         },

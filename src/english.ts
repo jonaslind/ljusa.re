@@ -2,14 +2,14 @@ import { Locale, LocaleImpl } from "./Locale";
 
 export const english: Locale = new LocaleImpl("en", "en-gb", new Map([
   ["bodyTitle", () => "ljusa.re"],
-  ["quarterTitle", (year: string, quarter: string) => "Quarter " + quarter + " " + year],
+  ["quarterTitle", (year: (string | undefined), quarter: (string | undefined)) => "Quarter " + quarter + " " + year],
   ["placesLabel", () => "Places"],
   ["locationSelector", () => "Add place"],
   ["startLink", () => "Start"],
   ["aboutAndLicenseLink", () => "About and License Information"],
   ["chartToday", () => "Today"],
-  ["chartSunriseLabel", (location: string) => "Sunrise in " + location],
-  ["chartSunsetLabel", (location: string) => "Sunset in " + location],
+  ["chartSunriseLabel", (location: (string | undefined)) => "Sunrise in " + location],
+  ["chartSunsetLabel", (location: (string | undefined)) => "Sunset in " + location],
   ["aboutFirstParagraph", () => `
     This website displays the sunset and sunrise times of the selected places in each place's local timezone.
   `],
@@ -26,12 +26,14 @@ export const english: Locale = new LocaleImpl("en", "en-gb", new Map([
     <a href="https://github.com/jonaslind/ljusa.re" class="externalLink">github.com/jonaslind/ljusa.re</a>.
   `],
   ["licenseUsageParagraph",
-    (repository: string, name: string, author: string, license: string, usage: string, type: string) =>
-      "This website uses " + usage + " the" +
-      " <a href=\"" + (repository.startsWith("git+") ? repository.substring(4) : repository) +
-      "\" class=\"packageLink\">" +
-      name + "</a> " + type +
-      (author != undefined ? " by " + author : "") +
+    (repository: (string | undefined), name: (string | undefined), author: (string | undefined), license: (string | undefined),
+      usage: (string | undefined), type: (string | undefined)) =>
+      "This website uses " + usage + " the " +
+      "<a href=\"" + repository + "\" class=\"packageLink\">" +
+      name +
+      "</a>" +
+      " " + type +
+      (author !== undefined ? " by " + author : "") +
       ", licensed under the " + license + " license:"
   ]
 ]));

@@ -1,7 +1,7 @@
 export class LicenseInfo {
   name: string;
   version: string;
-  author: string;
+  author: string | undefined;
   repository: string;
   source: string;
   license: string;
@@ -46,7 +46,7 @@ export class Licenses {
       licenseInfo.name,
       licenseInfo.version,
       licenseInfo.author,
-      licenseInfo.repository,
+      licenseInfo.location,
       licenseInfo.source,
       licenseInfo.license,
       licenseInfo.licenseText,

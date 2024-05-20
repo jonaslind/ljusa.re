@@ -2,14 +2,14 @@ import { Locale, LocaleImpl } from "./Locale";
 
 export const swedish: Locale = new LocaleImpl("se", "sv", new Map([
   ["bodyTitle", () => "ljusa.re"],
-  ["quarterTitle", (year: string, quarter: string) => "Kvartal " + quarter + " " + year],
+  ["quarterTitle", (year: (string | undefined), quarter: (string | undefined)) => "Kvartal " + quarter + " " + year],
   ["placesLabel", () => "Platser"],
   ["locationSelector", () => "Lägg till plats"],
   ["startLink", () => "Start"],
   ["aboutAndLicenseLink", () => "Om sidan samt licensinformation"],
   ["chartToday", () => "Idag"],
-  ["chartSunriseLabel", (location: string) => "Soluppgång i " + location],
-  ["chartSunsetLabel", (location: string) => "Solnedgång i " + location],
+  ["chartSunriseLabel", (location: (string | undefined)) => "Soluppgång i " + location],
+  ["chartSunsetLabel", (location: (string | undefined)) => "Solnedgång i " + location],
   ["aboutFirstParagraph", () => `
     Denna webbsida visar klockslag för soluppgång och solnedgång i valda platsers lokala tidszon.
   `],
@@ -27,12 +27,13 @@ export const swedish: Locale = new LocaleImpl("se", "sv", new Map([
     <a href="https://github.com/jonaslind/ljusa.re" class="externalLink">github.com/jonaslind/ljusa.re</a>.
   `],
   ["licenseUsageParagraph",
-    (repository: string, name: string, author: string, license: string, usage: string, type: string) =>
-      "Denna webbsida använder " + usage + " " + type +
-      " <a href=\"" + (repository.startsWith("git+") ? repository.substring(4) : repository) +
-      "\" class=\"packageLink\">" +
-      name + "</a>" +
-      (author != undefined ? " av " + author : "") +
+    (repository: (string | undefined), name: (string | undefined), author: (string | undefined), license: (string | undefined),
+      usage: (string | undefined), type: (string | undefined)) =>
+      "Denna webbsida använder " + usage + " " + type + " " +
+      "<a href=\"" + repository + "\" class=\"packageLink\">" +
+      name +
+      "</a>" +
+      (author !== undefined ? " av " + author : "") +
       ", licensierad under licensen " + license + ":"
   ]
 ]));
