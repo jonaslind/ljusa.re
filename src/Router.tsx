@@ -43,6 +43,7 @@ export function Router(): JSX.Element {
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Main locale={locale} style={style} />} />
+          <Route path="/about.html" element={<About locale={locale} />} />
           <Route path="/about" element={<About locale={locale} />} />
         </Routes>
       </BrowserRouter>
