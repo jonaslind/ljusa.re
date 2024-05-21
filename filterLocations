@@ -38,7 +38,7 @@ private static final Set<Integer> IGNORED_GEONAME_IDS = Collections.unmodifiable
 private static final int GLOBAL_NEARNESS_LIMIT = 50;
 
 /*
-  Transforms the GeoNames dataset into a typescript code snippet used by locations.ts.
+  Transforms the GeoNames dataset into a typescript code snippet used by Location.ts.
 
   The locations have been filtered to only contain the top n cities by population, excluding cities that are within
   a minimum distance of a bigger city (typically 4% of the furthest distance between places in that country or 50 km,
@@ -50,7 +50,7 @@ private static final int GLOBAL_NEARNESS_LIMIT = 50;
   This script is not included in any build pipeline. Download the allCountries.zip and alternateNamesV2.zip files from
   https://download.geonames.org/export/dump/ and then run this script, passing the paths to the zip files as arguments.
 
-  The locations.ts source file is updated automatically by this script..
+  The Location.ts source file is updated automatically by this script.
 */
 
 public void main(String[] args) {
@@ -66,10 +66,10 @@ public void main(String[] args) {
     System.exit(1);
   }
 
-  Path locationsTypescriptSourceFile = thisScriptPath.getParent().resolve(Path.of("src/locations.ts"))
+  Path locationsTypescriptSourceFile = thisScriptPath.getParent().resolve(Path.of("src/Location.ts"))
       .toAbsolutePath().normalize();
   if (!Files.exists(locationsTypescriptSourceFile)) {
-    System.out.println("locations.ts not found: " + locationsTypescriptSourceFile);
+    System.out.println("Location.ts not found: " + locationsTypescriptSourceFile);
     System.exit(1);
   }
   if (!Files.isRegularFile(locationsTypescriptSourceFile)) {
