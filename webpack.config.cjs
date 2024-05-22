@@ -42,6 +42,8 @@ module.exports = {
       includePackages: () => [
         path.resolve(__dirname, "additional-licenses", "solarized"),
         path.resolve(__dirname, "additional-licenses", "geonames"),
+        path.resolve(__dirname, "additional-licenses", "open-sans"),
+        path.resolve(__dirname, "additional-licenses", "roboto-mono"),
       ],
       additionalFiles: {
         'oss-licenses.json': (packages) => {

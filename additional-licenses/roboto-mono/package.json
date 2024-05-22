@@ -1,0 +1,11 @@
+{
+  "name": "roboto-mono",
+  "homepage": "https://github.com/googlefonts/RobotoMono",
+  "version": "3479a22",
+  "author": "Christian Robertson",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/googlefonts/RobotoMono.git"
+  }
+}

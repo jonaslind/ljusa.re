@@ -1,0 +1,11 @@
+{
+  "name": "open-sans",
+  "homepage": "https://github.com/googlefonts/opensans",
+  "version": "bd7e376",
+  "author": "Steve Matteson",
+  "license": "OFL-1.1",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/googlefonts/opensans.git"
+  }
+}

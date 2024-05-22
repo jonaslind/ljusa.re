@@ -19,6 +19,26 @@
       "se": "paletten"
     }
   },
+  "open-sans": {
+    "usage": {
+      "en": "fonts from",
+      "se": "fonter från"
+    },
+    "type": {
+      "en": "typeface",
+      "se": "typsnittet"
+    }
+  },
+  "roboto-mono": {
+    "usage": {
+      "en": "fonts from",
+      "se": "fonter från"
+    },
+    "type": {
+      "en": "typeface",
+      "se": "typsnittet"
+    }
+  },
   "geonames": {
     "usage": {
       "en": "placenames, country names, coordinates, elevation data and timezones from a subset of",
